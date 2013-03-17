@@ -63,7 +63,8 @@ vector3d stl_import::_read_vector(istream& is)
 	std::vector<std::string> n_strs;
 	std::string n_str;
 	while (std::getline(is, n_str, ' '))
-		n_strs.push_back(n_str);
+		if (!n_str.empty())
+			n_strs.push_back(n_str);
 
 	if (n_strs.size() != 3)
 	{
