@@ -81,11 +81,6 @@ namespace tut
 
 			return stl_ss.str();
 		}
-
-		static double tol()
-		{
-			return std::numeric_limits<double>::epsilon();
-		}
 	};
 
 	typedef test_group<test_stl_import_data> stl_test_group_t;
@@ -106,7 +101,8 @@ namespace tut
 		ensure(facets.size() == 1);
 
 		const triangle3d& facet = *facets.begin();
-		ensure(maths::close(facet.normal().distance_sq(vector3d(0.0, 0.0, 1.0)), 0.0, tol() * tol()));
+		const double tol = std::numeric_limits<double>::epsilon();
+		ensure(maths::close(facet.normal().distance_sq(vector3d(0.0, 0.0, 1.0)), 0.0, tol * tol));
 	}
 
 	template<> template<>
