@@ -52,7 +52,7 @@ namespace tut
 			stl_ss << "	facet normal 0.0 -0.89442719 0.447213596" << std::endl;
 			stl_ss << "		outer loop" << std::endl;
 			stl_ss << "			vertex -0.5 -0.4330127 0.0" << std::endl;
-			stl_ss << "			vertex  0.5 -0.4330127 0.0" << std::endl;
+			stl_ss << "			vertex  0.5 -0.4330127 0.0" << std::endl;	// Note the extra spaces
 			stl_ss << "			vertex  0 0 0.86602540" << std::endl;
 			stl_ss << "		endloop" << std::endl;
 			stl_ss << "	endfacet" << std::endl;
