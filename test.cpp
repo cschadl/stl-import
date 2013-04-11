@@ -14,6 +14,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <iterator>
 #include <tut.h>
 
 using std::istringstream;
@@ -141,6 +143,8 @@ namespace tut
 	{
 		set_test_name("Triangle mesh - tetrahedron");
 
+		const double tol = 1.0e-8;
+
 		string stl_str = get_tetrahedron_stl_str();
 		std::istringstream tet_is(stl_str);
 
@@ -153,5 +157,32 @@ namespace tut
 		ensure(mesh.get_vertices().size() == 4);
 		ensure(mesh.get_facets().size() == 4);
 		ensure(mesh.is_manifold());
+
+		// Facets should be in the order that they were read...
+		const vector<mesh_facet_ptr>& facets = mesh.get_facets();
+		ensure(facets[0]->get_normal().is_close(vector3d(0, -0.89442719, 0.447213596), tol));
+		ensure(facets[1]->get_normal().is_close(vector3d(-0.84016805, 0.48507125, 0.24253563), tol));
+		ensure(facets[2]->get_normal().is_close(vector3d(0.84016805, 0.48507125, 0.24253563), tol));
+		ensure(facets[3]->get_normal().is_close(vector3d(0, 0, -1), tol));
+
+		vector<mesh_facet_ptr>::const_iterator pf = facets.begin();
+		for ( ; pf != facets.end() ; ++pf)
+		{
+			mesh_facet_ptr f = *pf;
+			vector<mesh_facet_ptr> adj_facets_expected = mesh.get_facets();
+			adj_facets_expected.erase(std::find(adj_facets_expected.begin(), adj_facets_expected.end(), f));
+			vector<mesh_facet_ptr> adj_facets = f->get_adjacent_facets();
+
+			// I think the call to erase() might mess up the order...
+			std::sort(adj_facets_expected.begin(), adj_facets_expected.end());
+			std::sort(adj_facets.begin(), adj_facets.end());
+
+			std::copy(adj_facets_expected.begin(), adj_facets_expected.end(), std::ostream_iterator<mesh_facet_ptr>(std::cout, ", "));
+			std::cout << std::endl;
+			std::copy(adj_facets.begin(), adj_facets.end(), std::ostream_iterator<mesh_facet_ptr>(std::cout, ", "));
+			std::cout << std::endl;
+
+			ensure(adj_facets == adj_facets_expected);
+		}
 	}
 };

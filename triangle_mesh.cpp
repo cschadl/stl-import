@@ -7,6 +7,7 @@
 
 #include "triangle_mesh.h"
 #include <stdexcept>
+#include <iterator>
 #include <boost/bind.hpp>
 
 using std::vector;
@@ -203,6 +204,7 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 		{
 			mesh_vertex_ptr edge_start_vert(new mesh_vertex(e_v));
 			e->set_vertex(edge_start_vert);
+			edge_start_vert->set_edge(e);
 
 			// Insert this edge / vertex pair into our map
 			std::vector<mesh_edge_ptr> vertex_edges;
@@ -221,19 +223,32 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 				throw std::runtime_error("Empty edge / vertices association");
 
 			std::cout << "Found " << vertex_edges.size() << " edges with start vertex.. " << std::endl;
+			for (size_t ii = 0 ; ii < vertex_edges.size() ; ii++)
+			{
+				std::cout << vertex_edges[ii]->get_vertex()->get_point() << " => " << vertex_edges[ii]->get_end_vertex()->get_point() << std::endl;
+				std::cout << " --> " << vertex_edges[ii]->get_next_edge()->get_vertex()->get_point() << " => " << vertex_edges[ii]->get_next_edge()->get_end_vertex()->get_point() << std::endl;
+				std::cout << " <-- " << vertex_edges[ii]->get_prev_edge()->get_vertex()->get_point() << " => " << vertex_edges[ii]->get_prev_edge()->get_end_vertex()->get_point() << std::endl;
+			}
 
 			mesh_vertex_ptr v = (*vertex_edges.begin())->get_vertex();
 			if (std::find_if(vertex_edges.begin() + 1, vertex_edges.end(), boost::bind(&mesh_edge::get_vertex, _1) != v) != vertex_edges.end())
 				throw std::runtime_error("bad edge vertex");
 
+			if (!v)
+				throw std::runtime_error("got NULL vertex!");
+
 			e->set_vertex(v);
 
 			std::vector<mesh_edge_ptr>::iterator p_sym_edge = std::find_if(vertex_edges.begin(), vertex_edges.end(),
-				boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_end_vertex, boost::bind(&mesh_edge::get_prev_edge, _1))) == e_v);
+				(boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_end_vertex, boost::bind(&mesh_edge::get_prev_edge, _1))) == e_v) &&
+				(boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_vertex, boost::bind(&mesh_edge::get_prev_edge, _1))) == t[i + 1]));
 
 			if (p_sym_edge != vertex_edges.end())
 			{
-				mesh_edge_ptr e_sym = *p_sym_edge;
+				mesh_edge_ptr e_sym = (*p_sym_edge)->get_prev_edge();
+
+				if (e_sym->get_end_vertex()->get_point() != e_v)
+					throw std::runtime_error("symmetric edge point mismatch");
 
 				e->set_sym_edge(e_sym);
 				e_sym->set_sym_edge(e);
@@ -241,13 +256,23 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 				std::cout << "set symmetric edge " << e_sym->get_vertex()->get_point()  << " => " << e_sym->get_end_vertex()->get_point();
 			}
 			std::cout << std::endl;
+
+			vertex_edges.push_back(e);
 		}
 	}
 
-	// Set the facet of this triangle
+	// Set the facet of this triangle, and set the start edge of the facet
 	mesh_facet_ptr f(new mesh_facet(t.normal()));
-	m_facets.push_back(f);
 	std::for_each(triangle_edges.begin(), triangle_edges.end(), boost::bind(&mesh_edge::set_facet, _1, f));
+	f->set_edge(triangle_edges.back());
+	m_facets.push_back(f);
+
+	// more sanity checking
+	for (int i = 0 ; i < 3 ; i++)
+	{
+		if (triangle_edges[i]->get_sym_edge() && (triangle_edges[i]->get_facet() == triangle_edges[i]->get_sym_edge()->get_facet()))
+			throw std::runtime_error("Bad symmetric edge");
+	}
 
 	// Add the triangle edges to the list of edges
 	std::copy(triangle_edges.begin(), triangle_edges.end(), std::back_inserter(m_edges));
@@ -258,6 +283,9 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 	m_vertex_edge_map.clear();
 	std::for_each(triangles.begin(), triangles.end(), boost::bind(&triangle_mesh::_add_triangle, this, _1));
 	m_vertex_edge_map.clear();	// don't need this no mo
+
+	// DEBUG
+
 }
 
 bool triangle_mesh::is_manifold() const
