@@ -176,23 +176,43 @@ bool triangle_mesh::is_empty() const
 void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 {
 	vector<mesh_edge_ptr> triangle_edges;
+
+	// First, connect the edges of the triangle
 	for (int i = 0 ; i < 3 ; i++)
 	{
 		mesh_edge_ptr e(new mesh_edge);
+		triangle_edges.push_back(e);
+	}
 
-		vertex_edge_map_t::iterator ve = m_vertex_edge_map.find(t[i]);
+	for (int i = 0 ; i < 3 ; i++)
+	{
+		triangle_edges[i]->set_next_edge(triangle_edges[(i + 1) % 3]);
+		triangle_edges[i]->set_prev_edge(i == 0 ? triangle_edges[2] : triangle_edges[i - 1]);
+	}
+
+	// Set the vertices of this triangle
+	for (int i = 0 ; i < 3 ; i++)
+	{
+		mesh_edge_ptr e = triangle_edges[i];
+		const maths::vector3d& e_v = t[i];
+
+		std::cout << "Adding new edge " << t[i] << " => " << t[i + 1] << "... ";
+
+		vertex_edge_map_t::iterator ve = m_vertex_edge_map.find(e_v);
 		if (ve == m_vertex_edge_map.end())
 		{
-			mesh_vertex_ptr edge_start_vert(new mesh_vertex(t[i]));
+			mesh_vertex_ptr edge_start_vert(new mesh_vertex(e_v));
 			e->set_vertex(edge_start_vert);
 
 			// Insert this edge / vertex pair into our map
 			std::vector<mesh_edge_ptr> vertex_edges;
 			vertex_edges.push_back(e);
-			m_vertex_edge_map.insert(std::make_pair(t[i], vertex_edges));
+			m_vertex_edge_map.insert(std::make_pair(e_v, vertex_edges));
 
 			// Insert the vertex to the global list of vertices
 			m_verts.push_back(edge_start_vert);
+
+			std::cout << "NEW VERT" << std::endl;
 		}
 		else
 		{
@@ -200,38 +220,36 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 			if (vertex_edges.empty())
 				throw std::runtime_error("Empty edge / vertices association");
 
+			std::cout << "Found " << vertex_edges.size() << " edges with start vertex.. " << std::endl;
+
+			mesh_vertex_ptr v = (*vertex_edges.begin())->get_vertex();
+			if (std::find_if(vertex_edges.begin() + 1, vertex_edges.end(), boost::bind(&mesh_edge::get_vertex, _1) != v) != vertex_edges.end())
+				throw std::runtime_error("bad edge vertex");
+
+			e->set_vertex(v);
+
 			std::vector<mesh_edge_ptr>::iterator p_sym_edge = std::find_if(vertex_edges.begin(), vertex_edges.end(),
-				boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_end_vertex, _1)) == t[i]);
+				boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_end_vertex, boost::bind(&mesh_edge::get_prev_edge, _1))) == e_v);
+
 			if (p_sym_edge != vertex_edges.end())
 			{
 				mesh_edge_ptr e_sym = *p_sym_edge;
 
-				e->set_vertex(e_sym->get_next_edge()->get_vertex());
-
 				e->set_sym_edge(e_sym);
 				e_sym->set_sym_edge(e);
+
+				std::cout << "set symmetric edge " << e_sym->get_vertex()->get_point()  << " => " << e_sym->get_end_vertex()->get_point();
 			}
-
-			vertex_edges.push_back(e);
+			std::cout << std::endl;
 		}
-
-		// Set prev edge, next edge
-		if (i > 0)
-		{
-			e->set_prev_edge(triangle_edges[i - 1]);
-			triangle_edges[i - 1]->set_next_edge(e);
-		}
-
-		if (i == 2)
-			(*triangle_edges.begin())->set_prev_edge(e);
-
-		triangle_edges.push_back(e);
 	}
 
+	// Set the facet of this triangle
 	mesh_facet_ptr f(new mesh_facet(t.normal()));
 	m_facets.push_back(f);
-
 	std::for_each(triangle_edges.begin(), triangle_edges.end(), boost::bind(&mesh_edge::set_facet, _1, f));
+
+	// Add the triangle edges to the list of edges
 	std::copy(triangle_edges.begin(), triangle_edges.end(), std::back_inserter(m_edges));
 }
 
