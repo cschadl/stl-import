@@ -82,6 +82,9 @@ public:
 	// constructors
 	stl_import(std::istream& stream);
 
+	/** Gets the name of the solid as defined in the STL file.
+	 *  Note that the name will be converted to lowercase.
+	 */
 	std::string get_name() const { return m_solid_name; }
 
 	template <typename OutputIterator>

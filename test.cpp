@@ -6,6 +6,7 @@
  */
 
 #include "stl_import.h"
+#include "triangle_mesh.h"
 #include "vectors.h"
 #include "misc.h"
 #include "geom.h"
@@ -133,5 +134,24 @@ namespace tut
 		ensure(maths::close(n3.distance_sq(f->normal()), 0.0, tol * tol));	++f;
 		ensure(maths::close(n4.distance_sq(f->normal()), 0.0, tol * tol));	++f;
 		ensure(f == facets.end());
+	}
+
+	template<> template<>
+	void stl_test_group_t::object::test<3>()
+	{
+		set_test_name("Triangle mesh - tetrahedron");
+
+		string stl_str = get_tetrahedron_stl_str();
+		std::istringstream tet_is(stl_str);
+
+		stl_import importer(tet_is);
+
+		triangle_mesh mesh;
+		mesh.build(importer.get_facets());
+
+		ensure(mesh.get_edges().size() == 12);
+		ensure(mesh.get_vertices().size() == 4);
+		ensure(mesh.get_facets().size() == 4);
+		ensure(mesh.is_manifold());
 	}
 };
