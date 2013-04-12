@@ -11,6 +11,7 @@
 #include <boost/bind.hpp>
 
 using std::vector;
+using std::ostream;
 
 ///////////////////////////
 // mesh_edge
@@ -48,6 +49,12 @@ mesh_vertex_ptr mesh_edge::get_end_vertex() const
 	// but, the edge could be lamina, and we use this when
 	// we build the mesh in triangle_mesh::build()
 	return m_next_edge->get_vertex();
+}
+
+ostream& operator<<(ostream& os, const mesh_edge& edge)
+{
+	os << *(edge.get_vertex()) << " => " << *(edge.get_end_vertex());
+	return os;
 }
 
 ///////////////////////
@@ -102,6 +109,19 @@ vector<mesh_facet_ptr> mesh_facet::get_adjacent_facets() const
 	return facets;
 }
 
+ostream& operator<<(ostream& os, const mesh_facet& facet)
+{
+	const std::vector<mesh_edge_ptr> edges = facet.get_edges();
+	for (std::vector<mesh_edge_ptr>::const_iterator ei = edges.begin() ; ei != edges.end() ; ++ei)
+	{
+		os << (ei != edges.begin() ? " --> " : "") << *ei << std::endl;
+	}
+
+	// Also print normal and adjacent facets?
+
+	return os;
+}
+
 //////////////////////////
 // mesh_vertex
 
@@ -154,6 +174,12 @@ maths::vector3d mesh_vertex::get_normal() const
 	return vert_normal;
 }
 
+ostream& operator<<(ostream& os, const mesh_vertex& vertex)
+{
+	os << vertex.get_point();
+	return os;
+}
+
 ///////////////////////////////////////
 /// triangle_mesh
 
@@ -164,9 +190,21 @@ triangle_mesh::triangle_mesh(const vector<maths::triangle3d>& triangles)
 
 void triangle_mesh::reset()
 {
+	_destroy();
+
 	m_edges.clear();
 	m_verts.clear();
 	m_facets.clear();
+}
+
+void triangle_mesh::_destroy()
+{
+	for (size_t i = 0 ; i < m_edges.size() ; i++)
+		delete m_edges[i];
+	for (size_t i = 0 ; i < m_verts.size() ; i++)
+		delete m_verts[i];
+	for (size_t i = 0 ; i < m_facets.size() ; i++)
+		delete m_facets[i];
 }
 
 bool triangle_mesh::is_empty() const
@@ -266,13 +304,6 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 	std::for_each(triangle_edges.begin(), triangle_edges.end(), boost::bind(&mesh_edge::set_facet, _1, f));
 	f->set_edge(triangle_edges.back());
 	m_facets.push_back(f);
-
-	// more sanity checking
-	for (int i = 0 ; i < 3 ; i++)
-	{
-		if (triangle_edges[i]->get_sym_edge() && (triangle_edges[i]->get_facet() == triangle_edges[i]->get_sym_edge()->get_facet()))
-			throw std::runtime_error("Bad symmetric edge");
-	}
 
 	// Add the triangle edges to the list of edges
 	std::copy(triangle_edges.begin(), triangle_edges.end(), std::back_inserter(m_edges));

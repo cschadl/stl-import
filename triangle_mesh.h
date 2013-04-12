@@ -17,9 +17,9 @@ class mesh_vertex;
 class mesh_edge;
 class mesh_facet;
 
-typedef boost::shared_ptr<mesh_vertex>	mesh_vertex_ptr;
-typedef boost::shared_ptr<mesh_edge>	mesh_edge_ptr;
-typedef boost::shared_ptr<mesh_facet>	mesh_facet_ptr;
+typedef mesh_vertex*	mesh_vertex_ptr;
+typedef mesh_edge*		mesh_edge_ptr;
+typedef mesh_facet*		mesh_facet_ptr;
 
 /** An edge in the mesh.
  *  Most of the mesh topology is encoded in this data structure.
@@ -69,6 +69,8 @@ public:
 
 	bool is_lamina() const { return !m_symmetric_edge; }
 
+	friend std::ostream& operator<<(std::ostream& os, const mesh_edge& edge);
+
 	// I guess there should be a facet_iterator...
 };
 
@@ -88,6 +90,8 @@ public:
 	std::vector<mesh_edge_ptr>		get_edges() const;
 	std::vector<mesh_vertex_ptr>	get_verts() const;
 	std::vector<mesh_facet_ptr>		get_adjacent_facets() const;
+
+	friend std::ostream& operator<<(std::ostream& os, const mesh_facet& facet);
 };
 
 class mesh_vertex
@@ -111,6 +115,8 @@ public:
 	const maths::vector3d& get_point() const { return m_point; }
 
 	// edge_iterator, vertex_iterator
+
+	friend std::ostream& operator<<(std::ostream& os, const mesh_vertex& vertex);
 };
 
 class triangle_mesh
@@ -145,12 +151,16 @@ private:
 	typedef std::map<maths::vector3d, std::vector<mesh_edge_ptr>, compare_points> vertex_edge_map_t;
 	vertex_edge_map_t m_vertex_edge_map;
 
+	void _destroy();
+
 public:
 	/** Create an empty triangle mesh */
 	triangle_mesh() { }
 
 	/** Create a mesh from a bunch of triangles */
 	triangle_mesh(const std::vector<maths::triangle3d>& triangles);
+
+	~triangle_mesh() { _destroy(); }
 
 	/** Resets the mesh */
 	void reset();
