@@ -10,6 +10,7 @@
 #include <cctype>
 #include <sstream>
 #include <valarray>
+#include <stdio.h>
 
 #include "stl_import.h"
 #include "stl_import_exception.h"
@@ -21,18 +22,58 @@ using std::stringstream;
 using maths::vector3d;
 using maths::triangle3d;
 
+namespace
+{
+	/** Reads a line from a DOS CRLF file or a UNIX CR file
+	 *  Use instead of getline().
+	 *  Ganked from http://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
+	 */
+	istream& getline_crlf_cr(istream& is, std::string& t)
+	{
+		t.clear();
+
+		// The characters in the stream are read one-by-one using a std::streambuf.
+		// That is faster than reading them one-by-one using the std::istream.
+		// Code that uses streambuf this way must be guarded by a sentry object.
+		// The sentry object performs various tasks,
+		// such as thread synchronization and updating the stream state.
+
+		istream::sentry se(is, true);
+		std::streambuf* sb = is.rdbuf();
+
+		for(;;) {
+			int c = sb->sbumpc();
+			switch (c) {
+			case '\n':
+				return is;
+			case '\r':
+				if(sb->sgetc() == '\n')
+					sb->sbumpc();
+				return is;
+			case EOF:
+				// Also handle the case when the last line has no line ending
+				if(t.empty())
+					is.setstate(std::ios::eofbit);
+				return is;
+			default:
+				t += (char)c;
+			}
+		}
+	}
+};
+
 void stl_import::_read(istream& stream)
 {
 	ms_line_num = 1;
 
-	static size_t bufsize = 256;
-	char buf[256];
 	try
 	{
-		while (stream.good())
+		while (!stream.fail())
 		{
-			stream.getline(buf, bufsize);
-			_read_element(buf);
+			std::string line;
+			getline_crlf_cr(stream, line);
+			if (!stream.fail())
+				_read_element(line);
 
 			ms_line_num++;
 		}
@@ -229,7 +270,13 @@ void stl_import::_read_end_loop(istream& is)
 
 void stl_import::_read_endsolid(istream& is)
 {
-	// For now, do nothing...
+	std::string endsolid_name;
+	std::getline(is, endsolid_name, ' ');
+
+	if (endsolid_name != m_solid_name)
+		std::cout << "Warning, endsolid name " << endsolid_name
+					<< " does not match solid name " << m_solid_name
+					<< std::endl;
 }
 
 void stl_import::_read_element(const std::string& el)

@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <iterator>
 #include <tut.h>
 
@@ -184,5 +185,50 @@ namespace tut
 
 			ensure(adj_facets == adj_facets_expected);
 		}
+	}
+
+	template<> template<>
+	void stl_test_group_t::object::test<4>()
+	{
+		set_test_name("Triangle mesh - sphere");
+
+		std::ifstream sphere_infile;
+		sphere_infile.open("/home/cds/Desktop/sphere.stl", std::ifstream::in);
+
+		ensure(sphere_infile.is_open());
+		ensure(sphere_infile.good());
+
+		stl_import importer(sphere_infile);
+
+		triangle_mesh mesh;
+		mesh.build(importer.get_facets());
+
+		// Euler's formula |V| + |F| - |E|/2 = 2 should hold
+		// for sphere (or, maybe all convex shapes?)
+		ensure(mesh.get_edges().size() == 864);
+		ensure(mesh.get_vertices().size() == 146);
+		ensure(mesh.get_facets().size() == 288);
+
+		ensure(mesh.is_manifold());
+	}
+
+	template <> template<>
+	void stl_test_group_t::object::test<5>()
+	{
+		set_test_name("Triangle mesh - AR-15 lower receiver");
+
+		std::ifstream ar15_infile;	// note that this is a CRLF txt file
+		ar15_infile.open("/home/cds/Downloads/ar15_magazine_and_reciever/lowerreceiver.stl");
+
+		ensure(ar15_infile.is_open());
+		ensure(ar15_infile.good());
+
+		stl_import importer(ar15_infile);
+
+		triangle_mesh mesh;
+		mesh.build(importer.get_facets());
+
+		ensure(mesh.get_facets().size() == 36288);
+		ensure(mesh.is_manifold());
 	}
 };
