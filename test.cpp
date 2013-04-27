@@ -230,5 +230,8 @@ namespace tut
 
 		ensure(mesh.get_facets().size() == 36288);
 		ensure(mesh.is_manifold());
+
+		const maths::bbox3d mesh_bbox = mesh.bbox();
+		ensure(!mesh_bbox.is_empty());
 	}
 };

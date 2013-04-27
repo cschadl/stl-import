@@ -4,22 +4,22 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../main.cpp \
 ../stl_import.cpp \
 ../test.cpp \
-../triangle_mesh.cpp 
+../triangle_mesh.cpp \
+../tut_test.cpp 
 
 OBJS += \
-./main.o \
 ./stl_import.o \
 ./test.o \
-./triangle_mesh.o 
+./triangle_mesh.o \
+./tut_test.o 
 
 CPP_DEPS += \
-./main.d \
 ./stl_import.d \
 ./test.d \
-./triangle_mesh.d 
+./triangle_mesh.d \
+./tut_test.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

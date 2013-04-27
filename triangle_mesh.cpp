@@ -8,6 +8,7 @@
 #include "triangle_mesh.h"
 #include <stdexcept>
 #include <iterator>
+#include <algorithm>
 #include <boost/bind.hpp>
 
 using std::vector;
@@ -317,6 +318,17 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 
 	// DEBUG
 
+}
+
+maths::bbox3d triangle_mesh::bbox() const
+{
+	maths::bbox3d mesh_bbox;
+
+	std::vector<maths::vector3d> vertex_points(m_verts.size());
+	std::transform(m_verts.begin(), m_verts.end(), vertex_points.begin(), boost::bind(&mesh_vertex::get_point, _1));
+	mesh_bbox.add_points(vertex_points.begin(), vertex_points.end());
+
+	return mesh_bbox;
 }
 
 bool triangle_mesh::is_manifold() const
