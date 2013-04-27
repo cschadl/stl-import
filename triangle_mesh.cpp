@@ -166,10 +166,11 @@ maths::vector3d mesh_vertex::get_normal() const
 {
 	maths::vector3d vert_normal;
 
-	vector<mesh_facet_ptr> facets = get_adjacent_facets();
-	for (vector<mesh_facet_ptr>::iterator f = facets.begin() ; f != facets.end() ; ++f)
+	vector<mesh_facet_ptr> adj_facets = get_adjacent_facets();
+	for (vector<mesh_facet_ptr>::iterator f = adj_facets.begin() ; f != adj_facets.end() ; ++f)
 		vert_normal += (*f)->get_normal();
 
+	vert_normal /= (double) adj_facets.size();
 	vert_normal.unit();
 
 	return vert_normal;
