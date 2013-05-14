@@ -237,8 +237,6 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 		mesh_edge_ptr e = triangle_edges[i];
 		const maths::vector3d& e_v = t[i];
 
-		//std::cout << "Adding new edge " << t[i] << " => " << t[i + 1] << "... ";
-
 		vertex_edge_map_t::iterator ve = m_vertex_edge_map.find(e_v);
 		if (ve == m_vertex_edge_map.end())
 		{
@@ -253,22 +251,12 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 
 			// Insert the vertex to the global list of vertices
 			m_verts.push_back(edge_start_vert);
-
-			//std::cout << "NEW VERT" << std::endl;
 		}
 		else
 		{
 			std::vector<mesh_edge_ptr>& vertex_edges = ve->second;
 			if (vertex_edges.empty())
 				throw std::runtime_error("Empty edge / vertices association");
-
-			//std::cout << "Found " << vertex_edges.size() << " edges with start vertex.. " << std::endl;
-			for (size_t ii = 0 ; ii < vertex_edges.size() ; ii++)
-			{
-				//std::cout << vertex_edges[ii]->get_vertex()->get_point() << " => " << vertex_edges[ii]->get_end_vertex()->get_point() << std::endl;
-				//std::cout << " --> " << vertex_edges[ii]->get_next_edge()->get_vertex()->get_point() << " => " << vertex_edges[ii]->get_next_edge()->get_end_vertex()->get_point() << std::endl;
-				//std::cout << " <-- " << vertex_edges[ii]->get_prev_edge()->get_vertex()->get_point() << " => " << vertex_edges[ii]->get_prev_edge()->get_end_vertex()->get_point() << std::endl;
-			}
 
 			mesh_vertex_ptr v = (*vertex_edges.begin())->get_vertex();
 			if (std::find_if(vertex_edges.begin() + 1, vertex_edges.end(), boost::bind(&mesh_edge::get_vertex, _1) != v) != vertex_edges.end())
@@ -292,10 +280,7 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 
 				e->set_sym_edge(e_sym);
 				e_sym->set_sym_edge(e);
-
-				//std::cout << "set symmetric edge " << e_sym->get_vertex()->get_point()  << " => " << e_sym->get_end_vertex()->get_point();
 			}
-			//std::cout << std::endl;
 
 			vertex_edges.push_back(e);
 		}
