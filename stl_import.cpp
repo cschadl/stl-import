@@ -62,6 +62,10 @@ namespace
 	}
 };
 
+const maths::vector3d stl_import::NO_FACET_NORMAL = maths::vector3d(std::numeric_limits<double>::max(),
+																	std::numeric_limits<double>::max(),
+																	std::numeric_limits<double>::max());
+
 void stl_import::_read(istream& stream)
 {
 	ms_line_num = 1;
@@ -80,7 +84,7 @@ void stl_import::_read(istream& stream)
 	}
 	catch (exception& ex)
 	{
-		std::cout << "Crap, got an error: " << ex.what();
+		std::cout << "Crap, got an error at line " << ms_line_num << ": " << ex.what();
 		throw ex;
 	}
 }
@@ -141,7 +145,7 @@ void stl_import::_read_solid(istream& is)
 
 void stl_import::_read_facet(istream& is)
 {
-	if (!ms_last_facet_normal.is_null())
+	if (ms_last_facet_normal != NO_FACET_NORMAL)
 	{
 		std::ostringstream os;
 		os << "Already have facet normal " << ms_last_facet_normal << " at line " << ms_line_num;
@@ -179,7 +183,7 @@ void stl_import::_read_vertex(istream& is)
 
 void stl_import::_read_endfacet(istream& is)
 {
-	if (ms_last_facet_normal.is_null())
+	if (ms_last_facet_normal == NO_FACET_NORMAL)
 	{
 		std::ostringstream exp_os;
 		exp_os << "Didn't get facet normal reading endfacet at line " << ms_line_num;
@@ -212,7 +216,7 @@ void stl_import::_read_endfacet(istream& is)
 	// Reset the state
 	ms_got_outer_loop = false;
 	ms_num_vertices = false;
-	ms_last_facet_normal = vector3d();
+	ms_last_facet_normal = NO_FACET_NORMAL;
 	ms_cur_triangle.clear();
 }
 
@@ -328,6 +332,7 @@ stl_import::stl_import(istream& stream)
 : ms_line_num(1)
 , ms_got_outer_loop(false)
 , ms_num_vertices(0)
+, ms_last_facet_normal(NO_FACET_NORMAL)
 {
 	_read(stream);
 }

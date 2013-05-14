@@ -27,6 +27,8 @@ protected:
 	maths::vector3d					ms_last_facet_normal;
 	std::vector<maths::vector3d>	ms_cur_triangle;
 
+	static const maths::vector3d	NO_FACET_NORMAL;
+
 	/** Helper function for converting a string to a double */
 	static double _read_str_double(const std::string& dbl_str);
 
