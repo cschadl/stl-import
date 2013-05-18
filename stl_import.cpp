@@ -133,7 +133,7 @@ void stl_import::_read_solid(istream& is)
 	// Just use the first non-whitespace string we encounter
 	// as the
 	std::string name;
-	while (std::getline(is, name, ' '))
+	while (std::getline(is, name))
 	{
 		if (!name.empty())
 		{
