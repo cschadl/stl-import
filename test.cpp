@@ -305,4 +305,34 @@ namespace tut
 		stl_import importer(humanoid_infile);
 		ensure(!importer.get_facets().empty());
 	}
+
+	template <> template <>
+	void stl_test_group_t::object::test<8>()
+	{
+		set_test_name("Triangle mesh - non-manifold");
+
+		std::ifstream bottle_infile;
+		const std::string file_path = test_data_path() + "/bottle.stl";
+		bottle_infile.open(file_path.c_str());
+
+		ensure(bottle_infile.is_open());
+		ensure(bottle_infile.good());
+
+		stl_import importer(bottle_infile);
+		triangle_mesh mesh;
+		mesh.build(importer.get_facets());
+
+		ensure(!mesh.is_empty());
+		ensure(!mesh.is_manifold());
+
+		// Even though the mesh is not manifold, we should be able to iterate
+		// over all vertices in the mesh and retrieve a non-null vertex normal.
+		const std::vector<mesh_vertex_ptr> vertices = mesh.get_vertices();
+		for (std::vector<mesh_vertex_ptr>::const_iterator vi = vertices.begin() ; vi != vertices.end() ; ++vi)
+		{
+			mesh_vertex_ptr v = *vi;
+			ensure(!!v);
+			ensure(!v->get_normal().is_null());
+		}
+	}
 };
