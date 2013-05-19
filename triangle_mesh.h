@@ -34,6 +34,16 @@ private:
 	mesh_edge_ptr	m_symmetric_edge;
 
 public:
+	mesh_edge()
+	: m_vert(NULL)
+	, m_facet(NULL)
+	, m_next_edge(NULL)
+	, m_prev_edge(NULL)
+	, m_symmetric_edge(NULL)
+	{
+
+	}
+
 	void set_vertex(const mesh_vertex_ptr& v) { m_vert = v; }
 	const mesh_vertex_ptr& get_vertex() const { return m_vert; }
 
@@ -81,7 +91,9 @@ private:
 	maths::vector3d	m_normal;
 
 public:
-	mesh_facet(const maths::vector3d& normal) : m_normal(normal) { }
+	mesh_facet(const maths::vector3d& normal)
+	: m_edge(NULL)
+	, m_normal(normal) { }
 
 	void set_edge(const mesh_edge_ptr& edge) { m_edge = edge; }
 
@@ -101,7 +113,9 @@ private:
 	maths::vector3d	m_point;
 
 public:
-	mesh_vertex(const maths::vector3d& point) : m_point(point) { }
+	mesh_vertex(const maths::vector3d& point)
+	: m_edge(NULL)
+	, m_point(point) { }
 
 	void set_edge(const mesh_edge_ptr& edge)  { m_edge = edge; }
 
