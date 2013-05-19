@@ -206,9 +206,9 @@ void stl_import::_read_endfacet(istream& is)
 	const triangle3d facet(a, b, c);
 
 	// Make sure the normals are close
-	if (!maths::close(facet.normal().distance_sq(ms_last_facet_normal), 0.0, 1.0e-8))
-		std::cout << "WARNING: facet normals are different at line " << ms_line_num << std::endl
-			<< "Expected: " << ms_last_facet_normal << " got " << facet.normal() << std::endl;
+//	if (!maths::close(facet.normal().distance_sq(ms_last_facet_normal), 0.0, 1.0e-8))
+//		std::cout << "WARNING: facet normals are different at line " << ms_line_num << std::endl
+//			<< "Expected: " << ms_last_facet_normal << " got " << facet.normal() << std::endl;
 
 	// Add the facet to our bag of facets
 	m_facets.push_back(facet);
@@ -277,10 +277,10 @@ void stl_import::_read_endsolid(istream& is)
 	std::string endsolid_name;
 	std::getline(is, endsolid_name, ' ');
 
-	if (endsolid_name != m_solid_name)
-		std::cout << "Warning, endsolid name " << endsolid_name
-					<< " does not match solid name " << m_solid_name
-					<< std::endl;
+//	if (endsolid_name != m_solid_name)
+//		std::cout << "Warning, endsolid name " << endsolid_name
+//					<< " does not match solid name " << m_solid_name
+//					<< std::endl;
 }
 
 void stl_import::_read_element(const std::string& el)

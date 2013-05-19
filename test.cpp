@@ -11,12 +11,18 @@
 #include "misc.h"
 #include "geom.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <libgen.h>
+#include <sys/param.h>
+
 #include <sstream>
 #include <string>
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <stdexcept>
 #include <tut.h>
 
 using std::istringstream;
@@ -32,6 +38,34 @@ namespace tut
 {
 	struct test_stl_import_data
 	{
+		const std::string _test_data_path;
+
+		test_stl_import_data()
+		{
+			// Get path of TUT test data.
+			// We'll assume that it's one directory up in test_data/
+			// Note - this isn't portable at all
+			char tmp[32];
+			char path_buf[MAXPATHLEN];
+
+			::sprintf(tmp, "/proc/%d/exe", ::getpid());
+			const int bytes = std::min(::readlink(tmp, path_buf, MAXPATHLEN), (ssize_t)(MAXPATHLEN - 1));
+			if (bytes < 0)
+				throw std::runtime_error("Couldn't readlink() path");	// shouldn't happen...
+
+			const std::string cur_path = ::dirname(path_buf);
+
+			char cur_path_buf[MAXPATHLEN];	// because dirname() doesn't take a const char*...
+			std::size_t cur_path_len = cur_path.copy(cur_path_buf, cur_path.length());
+			cur_path_buf[cur_path_len] = '\0';
+
+			const std::string base_path = ::dirname(cur_path_buf);
+
+			const_cast<std::string&>(_test_data_path) = base_path + "/test_data";
+		}
+
+		const std::string& test_data_path() const { return _test_data_path; }
+
 		static string get_simple_stl_str()
 		{
 			// STL that defines a single facet
@@ -193,7 +227,7 @@ namespace tut
 		set_test_name("Triangle mesh - sphere");
 
 		std::ifstream sphere_infile;
-		sphere_infile.open("/home/cds/Desktop/sphere.stl", std::ifstream::in);
+		sphere_infile.open((test_data_path() + "/sphere.stl").c_str(), std::ifstream::in);
 
 		ensure(sphere_infile.is_open());
 		ensure(sphere_infile.good());
@@ -218,7 +252,8 @@ namespace tut
 		set_test_name("Triangle mesh - AR-15 lower receiver");
 
 		std::ifstream ar15_infile;	// note that this is a CRLF txt file
-		ar15_infile.open("/home/cds/Downloads/ar15_magazine_and_reciever/lowerreceiver.stl");
+		const std::string file_path = test_data_path() + "/lowerreceiver.stl";
+		ar15_infile.open(file_path.c_str());
 
 		ensure(ar15_infile.is_open());
 		ensure(ar15_infile.good());
@@ -233,5 +268,41 @@ namespace tut
 
 		const maths::bbox3d mesh_bbox = mesh.bbox();
 		ensure(!mesh_bbox.is_empty());
+	}
+
+	template <> template <>
+	void stl_test_group_t::object::test<6>()
+	{
+		set_test_name("Triangle mesh - null facet normal");
+
+		std::ifstream dna_infile;
+		const std::string file_path = test_data_path() + "/DNA_L.stl";
+		dna_infile.open(file_path.c_str());
+
+		ensure(dna_infile.is_open());
+		ensure(dna_infile.good());
+
+		stl_import importer(dna_infile);
+
+		triangle_mesh mesh;
+		mesh.build(importer.get_facets());
+
+		ensure(mesh.is_manifold());
+	}
+
+	template <> template <>
+	void stl_test_group_t::object::test<7>()
+	{
+		set_test_name("STL import - long solid name");
+
+		std::ifstream humanoid_infile;
+		const std::string file_path = test_data_path() + "/humanoid.stl";
+		humanoid_infile.open(file_path.c_str());
+
+		ensure(humanoid_infile.is_open());
+		ensure(humanoid_infile.good());
+
+		stl_import importer(humanoid_infile);
+		ensure(!importer.get_facets().empty());
 	}
 };
