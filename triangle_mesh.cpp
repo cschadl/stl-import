@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <iterator>
 #include <algorithm>
+#include <utility>
 #include <boost/bind.hpp>
 
 using std::vector;
@@ -194,6 +195,8 @@ void triangle_mesh::reset()
 {
 	_destroy();
 
+	m_bbox = maths::bbox3d();
+
 	m_edges.clear();
 	m_verts.clear();
 	m_facets.clear();
@@ -298,6 +301,9 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 
 void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 {
+	if (!is_empty())
+		reset();
+
 	m_vertex_edge_map.clear();
 	std::for_each(triangles.begin(), triangles.end(), boost::bind(&triangle_mesh::_add_triangle, this, _1));
 	m_vertex_edge_map.clear();	// don't need this no mo
@@ -308,13 +314,17 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 
 maths::bbox3d triangle_mesh::bbox() const
 {
-	maths::bbox3d mesh_bbox;
+	if (m_bbox.is_empty())
+	{
+		maths::bbox3d mesh_bbox;
 
-	std::vector<maths::vector3d> vertex_points(m_verts.size());
-	std::transform(m_verts.begin(), m_verts.end(), vertex_points.begin(), boost::bind(&mesh_vertex::get_point, _1));
-	mesh_bbox.add_points(vertex_points.begin(), vertex_points.end());
+		std::vector<maths::vector3d> vertex_points(m_verts.size());
+		std::transform(m_verts.begin(), m_verts.end(), vertex_points.begin(), boost::bind(&mesh_vertex::get_point, _1));
+		mesh_bbox.add_points(vertex_points.begin(), vertex_points.end());
 
-	return mesh_bbox;
+		m_bbox = mesh_bbox;
+	}
+	return m_bbox;
 }
 
 bool triangle_mesh::is_manifold() const
@@ -329,4 +339,70 @@ vector<mesh_edge_ptr> triangle_mesh::get_lamina_edges() const
 		std::back_inserter(lamina_edges), !boost::bind(&mesh_edge::is_lamina, _1));
 
 	return lamina_edges;
+}
+
+triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
+{
+	vbo_data_t vbo_data;
+
+	// First, build the index list
+	// Maybe there is a more efficient way to do this?
+	typedef std::map<maths::vector3d, unsigned int, compare_points> vertex_index_map_t;
+	vertex_index_map_t vertex_index_map;
+
+	std::vector<mesh_vertex_ptr> mesh_verts = get_vertices();
+	std::vector<mesh_facet_ptr> mesh_facets = get_facets();
+	for (std::vector<mesh_facet_ptr>::iterator it = mesh_facets.begin() ; it != mesh_facets.end() ; ++it)
+	{
+		mesh_facet_ptr facet = *it;
+		std::vector<mesh_vertex_ptr> facet_verts = facet->get_verts();
+
+		for (size_t i = 0 ; i < 3 ; i++)
+		{
+			mesh_vertex_ptr vi = facet_verts[i];
+			vertex_index_map_t::iterator vert_index = vertex_index_map.find(vi->get_point());
+			if (vert_index == vertex_index_map.end())
+			{
+				size_t idx = std::numeric_limits<size_t>::max();
+				for (size_t j = 0 ; j < mesh_verts.size() ; j++)
+				{
+					if (mesh_verts[j]->get_point() == vi->get_point())
+					{
+						idx = j;
+						break;
+					}
+				}
+				if (idx == std::numeric_limits<size_t>::max())
+					throw std::runtime_error("Didn't find vertex in list!");
+
+				std::pair<vertex_index_map_t::iterator, bool> res =
+						vertex_index_map.insert(std::make_pair(vi->get_point(), (unsigned int) idx));
+
+				vert_index = res.first;
+			}
+
+			vbo_data.indices.push_back(vert_index->second);
+		}
+	}
+
+	// Next, add the normals and vertices
+	for (std::vector<mesh_vertex_ptr>::iterator vi = mesh_verts.begin() ; vi != mesh_verts.end() ; ++vi)
+	{
+		mesh_vertex_ptr mesh_vert = *vi;
+
+		double* vert = new double[3];
+		double* normal = new double[3];
+		vert[0] = mesh_vert->get_point().x();
+		vert[1] = mesh_vert->get_point().y();
+		vert[2] = mesh_vert->get_point().z();
+
+		normal[0] = mesh_vert->get_normal().x();
+		normal[1] = mesh_vert->get_normal().y();
+		normal[2] = mesh_vert->get_normal().z();
+
+		vbo_data.verts.push_back(vert);
+		vbo_data.normals.push_back(normal);
+	}
+
+	return vbo_data;
 }

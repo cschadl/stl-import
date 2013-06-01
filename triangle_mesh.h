@@ -140,6 +140,8 @@ private:
 	std::vector<mesh_facet_ptr>		m_facets;
 	std::vector<mesh_vertex_ptr>	m_verts;
 
+	mutable maths::bbox3d			m_bbox;	// cached for speed
+
 	/** Adds unique vertices, edges and facets to m_edges, m_facets, and m_verts
 	 *  from the given triangle. */
 	void	_add_triangle(const maths::triangle3d& t);
@@ -201,6 +203,25 @@ public:
 	const vertex_iterator vertices_end() const { return m_verts.end(); }
 	const facet_iterator facets_begin() const { return m_facets.begin(); }
 	const facet_iterator facets_end() const { return m_facets.end(); }
+
+	// Stuff for passing mesh to OpenGL VBOs
+	struct vbo_data_t
+	{
+		std::vector<double*> 		verts;		/**< 3 doubles per vertex */
+		std::vector<double*> 		normals;	/**< 3 doubles per normal */
+		std::vector<unsigned int>	indices;	/**< flat array of vert/normal indices */
+
+		~vbo_data_t()
+		{
+			for (size_t i = 0 ; i < verts.size() ; i++)
+			{
+				delete[] verts[i];
+				delete[] normals[i];
+			}
+		}
+	};
+
+	vbo_data_t get_vbo_data() const;
 
 	/** Returns true if there are no lamina edges in the tessellation */
 	bool is_manifold() const;

@@ -335,4 +335,49 @@ namespace tut
 			ensure(!v->get_normal().is_null());
 		}
 	}
+
+	template <> template <>
+	void stl_test_group_t::object::test<9>()
+	{
+		set_test_name("Triangle mesh - VBO");
+
+		triangle_mesh mesh;
+		{
+			std::ifstream sphere_infile;
+			sphere_infile.open((test_data_path() + "/sphere.stl").c_str(), std::ifstream::in);
+			stl_import importer(sphere_infile);
+
+			mesh.build(importer.get_facets());
+		}
+		ensure(!mesh.is_empty());
+		ensure(mesh.is_manifold());
+
+		std::vector<maths::triangle3d> vbo_triangles;
+		triangle_mesh::vbo_data_t vbo_data = mesh.get_vbo_data();
+
+		size_t i = 0;
+		const std::vector<unsigned int>& vis = vbo_data.indices;
+		while (i < vbo_data.indices.size())
+		{
+			maths::vector3d v1(vbo_data.verts[vis[i]], 3);
+			maths::vector3d v2(vbo_data.verts[vis[i + 1]], 3);
+			maths::vector3d v3(vbo_data.verts[vis[i + 2]], 3);
+
+			vbo_triangles.push_back(maths::triangle3d(v1, v2, v3));
+
+			i += 3;
+		}
+
+		triangle_mesh sphere_rebuilt;
+		sphere_rebuilt.build(vbo_triangles);
+
+		// I'm not sure how to efficiently check that one mesh is isomorphic to another,
+		// so we'll just compare the number of verts / facets / edges and make sure that
+		// they are the same for both the original mesh and the VBO reconstructed mesh
+		ensure(!sphere_rebuilt.is_empty());
+		ensure(sphere_rebuilt.is_manifold());
+		ensure(sphere_rebuilt.get_edges().size() == mesh.get_edges().size());
+		ensure(sphere_rebuilt.get_vertices().size() == mesh.get_vertices().size());
+		ensure(sphere_rebuilt.get_facets().size() == mesh.get_facets().size());
+	}
 };
