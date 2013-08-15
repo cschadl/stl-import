@@ -363,20 +363,16 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 			vertex_index_map_t::iterator vert_index = vertex_index_map.find(vi->get_point());
 			if (vert_index == vertex_index_map.end())
 			{
-				size_t idx = std::numeric_limits<size_t>::max();
-				for (size_t j = 0 ; j < mesh_verts.size() ; j++)
-				{
-					if (mesh_verts[j]->get_point() == vi->get_point())
-					{
-						idx = j;
-						break;
-					}
-				}
-				if (idx == std::numeric_limits<size_t>::max())
-					throw std::runtime_error("Didn't find vertex in list!");
+				const maths::vector3d& vi_pt = vi->get_point();
+				std::vector<mesh_vertex_ptr>::iterator matching_vert =
+					std::find_if(mesh_verts.begin(), mesh_verts.end(), boost::bind(&mesh_vertex::get_point, _1) == vi_pt);
 
-				std::pair<vertex_index_map_t::iterator, bool> res =
-						vertex_index_map.insert(std::make_pair(vi->get_point(), (unsigned int) idx));
+				if (matching_vert == mesh_verts.end())
+					throw std::runtime_error("Couldn't find matching vert!");
+
+				// Constant-time complexity for random access iterator
+				const unsigned int idx = (unsigned int) std::distance(mesh_verts.begin(), matching_vert);
+				std::pair<vertex_index_map_t::iterator, bool> res = vertex_index_map.insert(std::make_pair(vi_pt, idx));
 
 				vert_index = res.first;
 			}
