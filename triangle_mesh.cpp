@@ -11,12 +11,27 @@
 #include <algorithm>
 #include <utility>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 
 using std::vector;
 using std::ostream;
 
 ///////////////////////////
 // mesh_edge
+
+bool mesh_edge::operator==(const mesh_edge& e) const
+{
+	if (e.get_start_point() != this->get_start_point())
+		return false;
+
+	if (e.get_end_point() != this->get_end_point())
+		return false;
+
+	if (e.is_lamina() != this->is_lamina())
+		return false;
+
+	return true;
+}
 
 vector<mesh_facet_ptr> mesh_edge::get_adjacent_facets() const
 {
@@ -51,6 +66,16 @@ mesh_vertex_ptr mesh_edge::get_end_vertex() const
 	// but, the edge could be lamina, and we use this when
 	// we build the mesh in triangle_mesh::build()
 	return m_next_edge->get_vertex();
+}
+
+maths::vector3d mesh_edge::get_start_point() const
+{
+	return get_start_vertex()->get_point();
+}
+
+maths::vector3d mesh_edge::get_end_point() const
+{
+	return get_end_vertex()->get_point();
 }
 
 ostream& operator<<(ostream& os, const mesh_edge& edge)
@@ -189,6 +214,25 @@ ostream& operator<<(ostream& os, const mesh_vertex& vertex)
 triangle_mesh::triangle_mesh(const vector<maths::triangle3d>& triangles)
 {
 	build(triangles);
+}
+
+bool triangle_mesh::operator==(const triangle_mesh& other) const
+{
+	vector<mesh_edge_ptr> this_edges = this->get_edges();
+	vector<mesh_edge_ptr> other_edges = other.get_edges();
+
+	// Use some quick and easy cases to early-out
+	if (this_edges.size() != other_edges.size())
+		return false;
+
+	if (this->is_manifold() != other.is_manifold())
+		return false;
+
+	// Sort each edge based on its start and end points
+	std::sort(this_edges.begin(), this_edges.end(), compare_edges());
+	std::sort(other_edges.begin(), other_edges.end(), compare_edges());
+
+	return std::equal(this_edges.begin(), this_edges.end(), other_edges.begin(), mesh_edge::are_equal);
 }
 
 void triangle_mesh::reset()

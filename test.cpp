@@ -367,17 +367,11 @@ namespace tut
 
 			i += 3;
 		}
+		std::random_shuffle(vbo_triangles.begin(), vbo_triangles.end());
 
 		triangle_mesh sphere_rebuilt;
 		sphere_rebuilt.build(vbo_triangles);
 
-		// I'm not sure how to efficiently check that one mesh is isomorphic to another,
-		// so we'll just compare the number of verts / facets / edges and make sure that
-		// they are the same for both the original mesh and the VBO reconstructed mesh
-		ensure(!sphere_rebuilt.is_empty());
-		ensure(sphere_rebuilt.is_manifold());
-		ensure(sphere_rebuilt.get_edges().size() == mesh.get_edges().size());
-		ensure(sphere_rebuilt.get_vertices().size() == mesh.get_vertices().size());
-		ensure(sphere_rebuilt.get_facets().size() == mesh.get_facets().size());
+		ensure(mesh == sphere_rebuilt);
 	}
 };

@@ -44,6 +44,9 @@ public:
 
 	}
 
+	bool operator==(const mesh_edge& e) const;
+	static bool are_equal(mesh_edge_ptr e1, mesh_edge_ptr e2) { return *e1 == *e2; }
+
 	void set_vertex(const mesh_vertex_ptr& v) { m_vert = v; }
 	const mesh_vertex_ptr& get_vertex() const { return m_vert; }
 
@@ -75,7 +78,10 @@ public:
 	std::vector<mesh_facet_ptr>	get_adjacent_facets() const;
 	std::vector<mesh_vertex_ptr> get_verts() const;
 
+	mesh_vertex_ptr get_start_vertex() const { return get_vertex(); }
 	mesh_vertex_ptr get_end_vertex() const;
+	maths::vector3d get_start_point() const;
+	maths::vector3d get_end_point() const;
 
 	bool is_lamina() const { return !m_symmetric_edge; }
 
@@ -151,7 +157,7 @@ private:
 	// points using this functor
 	struct compare_points
 	{
-		bool operator()(const maths::vector3d& p1, const maths::vector3d& p2)
+		bool operator()(const maths::vector3d& p1, const maths::vector3d& p2) const
 		{
 			if (p1.x() != p2.x())
 				return p1.x() < p2.x();
@@ -159,6 +165,30 @@ private:
 				return p1.y() < p2.y();
 
 			return p1.z() < p2.z();
+		}
+	};
+
+	struct compare_edges
+	{
+		bool operator()(const mesh_edge_ptr e1, const mesh_edge_ptr e2) const
+		{
+			const maths::vector3d e1_start = e1->get_start_point();
+			const maths::vector3d e2_start = e2->get_start_point();
+			const maths::vector3d e1_end = e1->get_end_point();
+			const maths::vector3d e2_end = e2->get_end_point();
+
+			if (e1_start.x() != e2_start.x())
+				return e1_start.x() < e2_start.x();
+			else if (e1_start.y() != e2_start.y())
+				return e1_start.y() < e2_start.y();
+			else if (e1_start.z() != e2_start.z())
+				return e1_start.z() < e2_start.z();
+			else if (e1_end.x() != e2_end.x())
+				return e1_end.x() < e2_end.x();
+			else if (e1_end.y() != e2_end.y())
+				return e1_end.y() < e2_end.y();
+
+			return e1_end.z() < e2_end.z();
 		}
 	};
 
@@ -176,7 +206,19 @@ public:
 	/** Create a mesh from a bunch of triangles */
 	triangle_mesh(const std::vector<maths::triangle3d>& triangles);
 
+	/** @name Copying
+	 *  Copy Constructors / assignment operators
+	 *  @{ */
+	//triangle_mesh& triangle_mesh(const triangle_mesh& mesh);
+	//triangle_mesh& operator=(const triangle_mesh& mesh);
+	/** @} */
+
+	/** Destructor */
 	~triangle_mesh() { _destroy(); }
+
+	/** Test two meshes for equality.
+	 *  This will return true if each edge in this mesh exactly matches each edge in the other mesh. */
+	bool operator==(const triangle_mesh& other) const;
 
 	/** Resets the mesh */
 	void reset();
