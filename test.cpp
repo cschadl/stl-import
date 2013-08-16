@@ -19,6 +19,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <set>
 #include <iostream>
 #include <fstream>
 #include <iterator>
@@ -394,6 +395,18 @@ namespace tut
 		triangle_mesh mesh2 = mesh1;
 		ensure(mesh1 == mesh2);
 
+		// Make sure  that we didn't do a shallow copy, although I guess we would
+		// know pretty quickly if that happened once the heap corrupted as soon
+		// as one of the meshes goes out of scope...
+		// All pointers should be unique in the new mesh, so test for disjoint sets
+		std::set<mesh_edge_ptr> mesh1_edgeset(mesh1.edges_begin(), mesh1.edges_end());
+		std::set<mesh_edge_ptr> mesh2_edgeset(mesh2.edges_begin(), mesh2.edges_end());
+		std::vector<mesh_edge_ptr> intersection;
+		std::set_intersection(mesh1_edgeset.begin(), mesh1_edgeset.end(),
+							  mesh2_edgeset.begin(), mesh2_edgeset.end(),
+							  std::back_inserter(intersection));
+		ensure(intersection.empty());
+
 		triangle_mesh mesh3;
 		{
 			// Just load some junk into mesh3.  Doesn't matter what.
@@ -405,6 +418,14 @@ namespace tut
 		}
 
 		mesh3 = mesh1;
+
+		// Again, make sure that we didn't do a shallow copy
+		std::set<mesh_edge_ptr> mesh3_edgeset(mesh3.edges_begin(), mesh3.edges_end());
+		std::set_intersection(mesh1_edgeset.begin(), mesh1_edgeset.end(),
+							  mesh3_edgeset.begin(), mesh3_edgeset.end(),
+							  std::back_inserter(intersection));
+		ensure(intersection.empty());
+
 		ensure(mesh1 == mesh3);
 		ensure(mesh3 == mesh2);
 	}
