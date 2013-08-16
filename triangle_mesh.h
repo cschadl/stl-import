@@ -104,6 +104,7 @@ public:
 	void set_edge(const mesh_edge_ptr& edge) { m_edge = edge; }
 
 	const maths::vector3d& get_normal() const { return m_normal; }
+	maths::triangle3d get_triangle() const;
 
 	std::vector<mesh_edge_ptr>		get_edges() const;
 	std::vector<mesh_vertex_ptr>	get_verts() const;
@@ -168,6 +169,8 @@ private:
 		}
 	};
 
+	/** Like compare_points, but compares the start and end vertices of two mesh_edge pointers.
+	 * Basically, sorts line segments. */
 	struct compare_edges
 	{
 		bool operator()(const mesh_edge_ptr e1, const mesh_edge_ptr e2) const
@@ -198,6 +201,7 @@ private:
 	vertex_edge_map_t m_vertex_edge_map;
 
 	void _destroy();
+	void _copy(const triangle_mesh& mesh);
 
 public:
 	/** Create an empty triangle mesh */
@@ -209,8 +213,8 @@ public:
 	/** @name Copying
 	 *  Copy Constructors / assignment operators
 	 *  @{ */
-	//triangle_mesh& triangle_mesh(const triangle_mesh& mesh);
-	//triangle_mesh& operator=(const triangle_mesh& mesh);
+	triangle_mesh(const triangle_mesh& mesh);
+	triangle_mesh& operator=(const triangle_mesh& mesh);
 	/** @} */
 
 	/** Destructor */

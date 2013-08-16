@@ -374,4 +374,38 @@ namespace tut
 
 		ensure(mesh == sphere_rebuilt);
 	}
+
+	template <> template <>
+	void stl_test_group_t::object::test<10>()
+	{
+		set_test_name("Copy constructor and assignment operator");
+
+		triangle_mesh mesh1;
+		{
+			std::ifstream sphere_infile;
+			sphere_infile.open((test_data_path() + "/DNA_L.stl").c_str(), std::ifstream::in);
+			stl_import importer(sphere_infile);
+
+			mesh1.build(importer.get_facets());
+		}
+
+		ensure(!mesh1.is_empty());
+
+		triangle_mesh mesh2 = mesh1;
+		ensure(mesh1 == mesh2);
+
+		triangle_mesh mesh3;
+		{
+			// Just load some junk into mesh3.  Doesn't matter what.
+			string stl_str = get_tetrahedron_stl_str();
+			std::istringstream tet_is(stl_str);
+
+			stl_import importer(tet_is);
+			mesh3.build(importer.get_facets());
+		}
+
+		mesh3 = mesh1;
+		ensure(mesh1 == mesh3);
+		ensure(mesh3 == mesh2);
+	}
 };

@@ -87,6 +87,14 @@ ostream& operator<<(ostream& os, const mesh_edge& edge)
 ///////////////////////
 // mesh_facet
 
+maths::triangle3d mesh_facet::get_triangle() const
+{
+	vector<mesh_vertex_ptr> verts = get_verts();
+	maths::triangle3d triangle(verts[0]->get_point(), verts[1]->get_point(), verts[2]->get_point());
+
+	return triangle;
+}
+
 vector<mesh_edge_ptr> mesh_facet::get_edges() const
 {
 	vector<mesh_edge_ptr> edges;
@@ -216,6 +224,19 @@ triangle_mesh::triangle_mesh(const vector<maths::triangle3d>& triangles)
 	build(triangles);
 }
 
+triangle_mesh::triangle_mesh(const triangle_mesh& mesh)
+{
+	_copy(mesh);
+}
+
+triangle_mesh& triangle_mesh::operator=(const triangle_mesh& mesh)
+{
+	reset();
+	_copy(mesh);
+
+	return *this;
+}
+
 bool triangle_mesh::operator==(const triangle_mesh& other) const
 {
 	vector<mesh_edge_ptr> this_edges = this->get_edges();
@@ -254,6 +275,18 @@ void triangle_mesh::_destroy()
 		delete m_verts[i];
 	for (size_t i = 0 ; i < m_facets.size() ; i++)
 		delete m_facets[i];
+}
+
+void triangle_mesh::_copy(const triangle_mesh& mesh)
+{
+	if (!is_empty())
+		throw std::runtime_error("Cannot copy into a non-empty mesh!");
+
+	std::vector<mesh_facet_ptr> mesh_facets = mesh.get_facets();
+	std::vector<maths::triangle3d> triangles(mesh_facets.size());
+	std::transform(mesh_facets.begin(), mesh_facets.end(), triangles.begin(), boost::bind(&mesh_facet::get_triangle, _1));
+
+	build(triangles);
 }
 
 bool triangle_mesh::is_empty() const
