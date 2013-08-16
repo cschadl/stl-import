@@ -389,7 +389,7 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 
 }
 
-maths::bbox3d triangle_mesh::bbox() const
+const maths::bbox3d& triangle_mesh::bbox() const
 {
 	if (m_bbox.is_empty())
 	{

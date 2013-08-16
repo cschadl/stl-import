@@ -237,7 +237,7 @@ public:
 	const std::vector<mesh_facet_ptr>& get_facets() const { return m_facets; }
 	const std::vector<mesh_vertex_ptr>& get_vertices() const { return m_verts; }
 
-	maths::bbox3d bbox() const;
+	const maths::bbox3d& bbox() const;
 
 	typedef std::vector<mesh_edge_ptr>::const_iterator edge_iterator;
 	typedef std::vector<mesh_facet_ptr>::const_iterator facet_iterator;
