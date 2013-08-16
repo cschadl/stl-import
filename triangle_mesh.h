@@ -223,6 +223,7 @@ public:
 	/** Test two meshes for equality.
 	 *  This will return true if each edge in this mesh exactly matches each edge in the other mesh. */
 	bool operator==(const triangle_mesh& other) const;
+	bool operator!=(const triangle_mesh& other) const { return !(*this == other); }
 
 	/** Resets the mesh */
 	void reset();

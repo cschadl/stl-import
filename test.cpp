@@ -415,6 +415,8 @@ namespace tut
 
 			stl_import importer(tet_is);
 			mesh3.build(importer.get_facets());
+
+			ensure(mesh3 != mesh1);
 		}
 
 		mesh3 = mesh1;
