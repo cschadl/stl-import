@@ -383,9 +383,9 @@ namespace tut
 
 		triangle_mesh mesh1;
 		{
-			std::ifstream sphere_infile;
-			sphere_infile.open((test_data_path() + "/DNA_L.stl").c_str(), std::ifstream::in);
-			stl_import importer(sphere_infile);
+			std::ifstream dna_infile;
+			dna_infile.open((test_data_path() + "/DNA_L.stl").c_str(), std::ifstream::in);
+			stl_import importer(dna_infile);
 
 			mesh1.build(importer.get_facets());
 		}
