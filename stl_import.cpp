@@ -59,6 +59,8 @@ namespace
 				t += (char)c;
 			}
 		}
+
+		return is;
 	}
 };
 
