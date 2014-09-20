@@ -348,8 +348,11 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 			e->set_vertex(v);
 
 			std::vector<mesh_edge_ptr>::iterator p_sym_edge = std::find_if(vertex_edges.begin(), vertex_edges.end(),
-				(boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_end_vertex, boost::bind(&mesh_edge::get_prev_edge, _1))) == e_v) &&
-				(boost::bind(&mesh_vertex::get_point, boost::bind(&mesh_edge::get_vertex, boost::bind(&mesh_edge::get_prev_edge, _1))) == t[i + 1]));
+				[&e_v, &t, i](mesh_edge_ptr e) {
+					return 	e->get_prev_edge()->get_end_vertex()->get_point() == e_v &&
+							e->get_prev_edge()->get_vertex()->get_point() == t[i + 1];
+				}
+			);
 
 			if (p_sym_edge != vertex_edges.end())
 			{
