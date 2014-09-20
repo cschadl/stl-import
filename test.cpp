@@ -193,6 +193,7 @@ namespace tut
 		ensure(mesh.get_vertices().size() == 4);
 		ensure(mesh.get_facets().size() == 4);
 		ensure(mesh.is_manifold());
+		ensure(mesh.get_lamina_edges().empty());
 
 		// Facets should be in the order that they were read...
 		const vector<mesh_facet_ptr>& facets = mesh.get_facets();

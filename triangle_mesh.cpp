@@ -416,8 +416,7 @@ bool triangle_mesh::is_manifold() const
 vector<mesh_edge_ptr> triangle_mesh::get_lamina_edges() const
 {
 	vector<mesh_edge_ptr> lamina_edges;
-	std::remove_copy_if(m_edges.begin(), m_edges.end(),
-		std::back_inserter(lamina_edges), !boost::bind(&mesh_edge::is_lamina, _1));
+	std::copy_if(m_edges.begin(), m_edges.end(), std::back_inserter(lamina_edges), std::mem_fn(&mesh_edge::is_lamina));
 
 	return lamina_edges;
 }
