@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <utility>
+#include <tuple>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -452,9 +453,7 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 
 				// Constant-time complexity for random access iterator
 				const unsigned int idx = (unsigned int) std::distance(mesh_verts.begin(), matching_vert);
-				std::pair<vertex_index_map_t::iterator, bool> res = vertex_index_map.insert(std::make_pair(vi_pt, idx));
-
-				vert_index = res.first;
+				std::tie(vert_index, std::ignore) = vertex_index_map.insert(std::make_pair(vi_pt, idx));
 			}
 
 			vbo_data.indices.push_back(vert_index->second);
