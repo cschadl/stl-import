@@ -45,7 +45,6 @@ public:
 	}
 
 	bool operator==(const mesh_edge& e) const;
-	static bool are_equal(mesh_edge_ptr e1, mesh_edge_ptr e2) { return *e1 == *e2; }
 
 	void set_vertex(const mesh_vertex_ptr& v) { m_vert = v; }
 	const mesh_vertex_ptr& get_vertex() const { return m_vert; }
@@ -274,6 +273,14 @@ public:
 	bool is_manifold() const;
 
 	std::vector<mesh_edge_ptr> get_lamina_edges() const;
+
+	friend std::ostream& operator<<(std::ostream& os, const triangle_mesh& mesh);
 };
+
+/** Output mesh as an ASCII STL to the given stream.
+ *  @remark	This should probably eventually be replaced with a
+ *  		mesh serializer class, if only to control binary or ASCII output.
+ */
+std::ostream& operator<<(std::ostream& os, const triangle_mesh& mesh);
 
 #endif /* TRIANGLE_MESH_H_ */

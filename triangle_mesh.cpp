@@ -11,11 +11,13 @@
 #include <algorithm>
 #include <utility>
 #include <tuple>
+#include <iomanip>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
 using std::vector;
 using std::ostream;
+using std::setprecision;
 
 ///////////////////////////
 // mesh_edge
@@ -254,7 +256,8 @@ bool triangle_mesh::operator==(const triangle_mesh& other) const
 	std::sort(this_edges.begin(), this_edges.end(), compare_edges());
 	std::sort(other_edges.begin(), other_edges.end(), compare_edges());
 
-	return std::equal(this_edges.begin(), this_edges.end(), other_edges.begin(), mesh_edge::are_equal);
+	return std::equal(this_edges.begin(), this_edges.end(), other_edges.begin(),
+		[](mesh_edge_ptr e1, mesh_edge_ptr e2) { return *e1 == *e2; });
 }
 
 void triangle_mesh::reset()
@@ -430,11 +433,10 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 	typedef std::map<maths::vector3d, unsigned int, compare_points> vertex_index_map_t;
 	vertex_index_map_t vertex_index_map;
 
-	std::vector<mesh_vertex_ptr> mesh_verts = get_vertices();
-	std::vector<mesh_facet_ptr> mesh_facets = get_facets();
-	for (std::vector<mesh_facet_ptr>::iterator it = mesh_facets.begin() ; it != mesh_facets.end() ; ++it)
+	const std::vector<mesh_vertex_ptr>& mesh_verts = get_vertices();
+	const std::vector<mesh_facet_ptr>& mesh_facets = get_facets();
+	for (mesh_facet_ptr facet : mesh_facets)
 	{
-		mesh_facet_ptr facet = *it;
 		std::vector<mesh_vertex_ptr> facet_verts = facet->get_verts();
 
 		for (size_t i = 0 ; i < 3 ; i++)
@@ -444,8 +446,8 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 			if (vert_index == vertex_index_map.end())
 			{
 				const maths::vector3d& vi_pt = vi->get_point();
-				std::vector<mesh_vertex_ptr>::iterator matching_vert =
-					std::find_if(mesh_verts.begin(), mesh_verts.end(), boost::bind(&mesh_vertex::get_point, _1) == vi_pt);
+				auto matching_vert = std::find_if(mesh_verts.begin(), mesh_verts.end(),
+					boost::bind(&mesh_vertex::get_point, _1) == vi_pt);
 
 				if (matching_vert == mesh_verts.end())
 					throw std::runtime_error("Couldn't find matching vert!");
@@ -460,10 +462,8 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 	}
 
 	// Next, add the normals and vertices
-	for (std::vector<mesh_vertex_ptr>::iterator vi = mesh_verts.begin() ; vi != mesh_verts.end() ; ++vi)
+	for (mesh_vertex_ptr mesh_vert : mesh_verts)
 	{
-		mesh_vertex_ptr mesh_vert = *vi;
-
 		double* vert = new double[3];
 		double* normal = new double[3];
 		vert[0] = mesh_vert->get_point().x();
@@ -479,4 +479,33 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 	}
 
 	return vbo_data;
+}
+
+ostream& operator<<(ostream& os, const triangle_mesh& mesh)
+{
+	const vector<mesh_facet_ptr>& facets = mesh.get_facets();
+
+	os << "solid" << std::endl;	// TODO - add mesh name
+
+	for (mesh_facet_ptr f : facets)
+	{
+		const maths::triangle3d t = f->get_triangle();
+		const maths::vector3d n = f->get_normal();
+
+		os << "facet normal ";
+		os << setprecision(6) << n.x() << " " << n.y() << " " << n.z() << std::endl;
+
+		os << "\t" << "outer loop" << std::endl;
+		for (int i = 0 ; i < 3 ; i++)
+		{
+			const maths::vector3d& p = t[i];
+			os << "\t\t" << "vertex " << "\t" << setprecision(6) << p.x() << " " << p.y() << " " << p.z() << std::endl;
+		}
+		os << "\t" << "endloop" << std::endl;
+		os << "endfacet" << std::endl;
+	}
+
+	os << "endsolid";
+
+	return os;
 }

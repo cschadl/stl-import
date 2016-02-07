@@ -388,7 +388,10 @@ namespace tut
 			dna_infile.open((test_data_path() + "/DNA_L.stl").c_str(), std::ifstream::in);
 			stl_import importer(dna_infile);
 
-			mesh1.build(importer.get_facets());
+			std::vector<maths::triangle3d> mesh1_facets = importer.get_facets();
+			std::random_shuffle(mesh1_facets.begin(), mesh1_facets.end());
+
+			mesh1.build(mesh1_facets);
 		}
 
 		ensure(!mesh1.is_empty());
@@ -431,5 +434,47 @@ namespace tut
 
 		ensure(mesh1 == mesh3);
 		ensure(mesh3 == mesh2);
+	}
+
+	template<> template<>
+	void stl_test_group_t::object::test<11>()
+	{
+		set_test_name("Output");
+
+		triangle_mesh mesh1;
+		{
+			// Use DNA_L.stl again, since we know that the copy constructor
+			// works, assuming that the previous test passed.
+			std::ifstream dna_infile;
+			dna_infile.open((test_data_path() + "/DNA_L.stl").c_str(), std::ifstream::in);
+			stl_import importer(dna_infile);
+
+			mesh1.build(importer.get_facets());
+		}
+
+		std::ostringstream os;
+		// debugging
+//		std::ofstream os;
+//		os.open("/tmp/blah.stl");
+//		if (!os.is_open())
+//		{
+//			throw std::runtime_error("Error opening file");
+//		}
+		os << mesh1;
+//		os.close();
+
+		std::istringstream is(os.str());
+//		std::ifstream is;
+//		is.open("/tmp/blah.stl");
+
+		triangle_mesh mesh2;
+		{
+			stl_import importer(is);
+			mesh2.build(importer.get_facets());
+		}
+//		is.close();
+
+		ensure(!mesh2.is_empty());
+		ensure(mesh1 == mesh2);
 	}
 };
