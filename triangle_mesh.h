@@ -10,16 +10,21 @@
 
 #include <vector>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
 #include "geom.h"
 
 class mesh_vertex;
 class mesh_edge;
 class mesh_facet;
 
-typedef mesh_vertex*	mesh_vertex_ptr;
-typedef mesh_edge*		mesh_edge_ptr;
-typedef mesh_facet*		mesh_facet_ptr;
+typedef std::weak_ptr<mesh_vertex> 	mesh_vertex_weak;
+typedef std::weak_ptr<mesh_edge>	mesh_edge_weak;
+typedef std::weak_ptr<mesh_facet>	mesh_facet_weak;
+
+typedef std::shared_ptr<mesh_vertex>	mesh_vertex_ptr;
+typedef std::shared_ptr<mesh_edge>		mesh_edge_ptr;
+typedef std::shared_ptr<mesh_facet>		mesh_facet_ptr;
 
 /** An edge in the mesh.
  *  Most of the mesh topology is encoded in this data structure.
@@ -27,19 +32,14 @@ typedef mesh_facet*		mesh_facet_ptr;
 class mesh_edge
 {
 private:
-	mesh_vertex_ptr	m_vert;
-	mesh_facet_ptr	m_facet;
-	mesh_edge_ptr	m_next_edge;	// CCW order
-	mesh_edge_ptr	m_prev_edge;	// CCW order
-	mesh_edge_ptr	m_symmetric_edge;
+	mesh_vertex_weak	m_vert;
+	mesh_facet_weak		m_facet;
+	mesh_edge_weak		m_next_edge;	// CCW order
+	mesh_edge_weak		m_prev_edge;	// CCW order
+	mesh_edge_weak		m_symmetric_edge;
 
 public:
 	mesh_edge()
-	: m_vert(NULL)
-	, m_facet(NULL)
-	, m_next_edge(NULL)
-	, m_prev_edge(NULL)
-	, m_symmetric_edge(NULL)
 	{
 
 	}
@@ -47,19 +47,19 @@ public:
 	bool operator==(const mesh_edge& e) const;
 
 	void set_vertex(const mesh_vertex_ptr& v) { m_vert = v; }
-	const mesh_vertex_ptr& get_vertex() const { return m_vert; }
+	mesh_vertex_ptr get_vertex() const { return m_vert.lock(); }
 
 	void set_facet(const mesh_facet_ptr& f) { m_facet = f; }
-	const mesh_facet_ptr& get_facet() const { return m_facet; }
+	mesh_facet_ptr get_facet() const { return m_facet.lock(); }
 
 	void set_prev_edge(const mesh_edge_ptr& e) { m_prev_edge = e; }
-	const mesh_edge_ptr& get_prev_edge() const { return m_prev_edge; }
+	mesh_edge_ptr get_prev_edge() const { return m_prev_edge.lock(); }
 
 	void set_next_edge(const mesh_edge_ptr& e) { m_next_edge = e; }
-	const mesh_edge_ptr& get_next_edge() const { return m_next_edge; }
+	mesh_edge_ptr get_next_edge() const { return m_next_edge.lock(); }
 
 	void set_sym_edge(const mesh_edge_ptr& e) { m_symmetric_edge = e; }
-	const mesh_edge_ptr& get_sym_edge() const { return m_symmetric_edge; }
+	mesh_edge_ptr get_sym_edge() const { return m_symmetric_edge.lock(); }
 
 	void set(const mesh_vertex_ptr& v,
 			 const mesh_facet_ptr& f,
@@ -82,7 +82,7 @@ public:
 	maths::vector3d get_start_point() const;
 	maths::vector3d get_end_point() const;
 
-	bool is_lamina() const { return !m_symmetric_edge; }
+	bool is_lamina() const { return m_symmetric_edge.expired(); }
 
 	friend std::ostream& operator<<(std::ostream& os, const mesh_edge& edge);
 
@@ -92,13 +92,12 @@ public:
 class mesh_facet
 {
 private:
-	mesh_edge_ptr	m_edge;	// Any (?) edge on this facet
+	mesh_edge_weak	m_edge;	// Any (?) edge on this facet
 	maths::vector3d	m_normal;
 
 public:
 	mesh_facet(const maths::vector3d& normal)
-	: m_edge(NULL)
-	, m_normal(normal) { }
+	: m_normal(normal) { }
 
 	void set_edge(const mesh_edge_ptr& edge) { m_edge = edge; }
 
@@ -115,13 +114,12 @@ public:
 class mesh_vertex
 {
 private:
-	mesh_edge_ptr	m_edge;
+	mesh_edge_weak	m_edge;
 	maths::vector3d	m_point;
 
 public:
 	mesh_vertex(const maths::vector3d& point)
-	: m_edge(NULL)
-	, m_point(point) { }
+	: m_point(point) { }
 
 	void set_edge(const mesh_edge_ptr& edge)  { m_edge = edge; }
 
@@ -139,6 +137,7 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const mesh_vertex& vertex);
 };
 
+/// The main triangle mesh class
 class triangle_mesh
 {
 private:
@@ -199,9 +198,6 @@ private:
 	typedef std::map<maths::vector3d, std::vector<mesh_edge_ptr>, compare_points> vertex_edge_map_t;
 	vertex_edge_map_t m_vertex_edge_map;
 
-	void _destroy();
-	void _copy(const triangle_mesh& mesh);
-
 public:
 	/** Create an empty triangle mesh */
 	triangle_mesh() { }
@@ -212,12 +208,12 @@ public:
 	/** @name Copying
 	 *  Copy Constructors / assignment operators
 	 *  @{ */
-	triangle_mesh(const triangle_mesh& mesh);
-	triangle_mesh& operator=(const triangle_mesh& mesh);
+	triangle_mesh(const triangle_mesh& mesh) = default;
+	triangle_mesh& operator=(const triangle_mesh& mesh) = default;
 	/** @} */
 
 	/** Destructor */
-	~triangle_mesh() { _destroy(); }
+	~triangle_mesh() { }
 
 	/** Test two meshes for equality.
 	 *  This will return true if each edge in this mesh exactly matches each edge in the other mesh. */

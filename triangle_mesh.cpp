@@ -12,12 +12,12 @@
 #include <utility>
 #include <tuple>
 #include <iomanip>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 using std::vector;
 using std::ostream;
 using std::setprecision;
+using namespace std::placeholders;
 
 ///////////////////////////
 // mesh_edge
@@ -39,12 +39,16 @@ bool mesh_edge::operator==(const mesh_edge& e) const
 vector<mesh_facet_ptr> mesh_edge::get_adjacent_facets() const
 {
 	vector<mesh_facet_ptr> facets;
-	if (m_facet)
+
+	mesh_facet_ptr facet = get_facet();
+	if (!facet)
 	{
-		facets.push_back(m_facet);
-		if (m_symmetric_edge)
+		facets.push_back(facet);
+
+		mesh_edge_ptr sym_edge = get_sym_edge();
+		if (sym_edge)
 		{
-			facets.push_back(m_symmetric_edge->get_facet());
+			facets.push_back(sym_edge->get_facet());
 		}
 	}
 
@@ -54,9 +58,9 @@ vector<mesh_facet_ptr> mesh_edge::get_adjacent_facets() const
 vector<mesh_vertex_ptr> mesh_edge::get_verts() const
 {
 	vector<mesh_vertex_ptr> verts;
-	if (m_vert)
+	if (!m_vert.expired())
 	{
-		verts.push_back(m_vert);
+		verts.push_back(get_vertex());
 		verts.push_back(get_end_vertex());
 	}
 
@@ -68,7 +72,7 @@ mesh_vertex_ptr mesh_edge::get_end_vertex() const
 	// We could use the symmetric edge to get the end vertex,
 	// but, the edge could be lamina, and we use this when
 	// we build the mesh in triangle_mesh::build()
-	return m_next_edge->get_vertex();
+	return get_next_edge()->get_vertex();
 }
 
 maths::vector3d mesh_edge::get_start_point() const
@@ -102,7 +106,7 @@ vector<mesh_edge_ptr> mesh_facet::get_edges() const
 {
 	vector<mesh_edge_ptr> edges;
 
-	const mesh_edge_ptr& start_edge = m_edge;
+	mesh_edge_ptr start_edge = m_edge.lock();
 	mesh_edge_ptr e = start_edge;
 	do
 	{
@@ -118,7 +122,7 @@ vector<mesh_vertex_ptr> mesh_facet::get_verts() const
 {
 	vector<mesh_vertex_ptr> verts;
 
-	const mesh_edge_ptr& start_edge = m_edge;
+	mesh_edge_ptr start_edge = m_edge.lock();
 	mesh_edge_ptr e = start_edge;
 	do
 	{
@@ -134,7 +138,7 @@ vector<mesh_facet_ptr> mesh_facet::get_adjacent_facets() const
 {
 	vector<mesh_facet_ptr> facets;
 
-	const mesh_edge_ptr& start_edge = m_edge;
+	mesh_edge_ptr start_edge = m_edge.lock();
 	mesh_edge_ptr e = start_edge;
 	do
 	{
@@ -150,7 +154,7 @@ vector<mesh_facet_ptr> mesh_facet::get_adjacent_facets() const
 ostream& operator<<(ostream& os, const mesh_facet& facet)
 {
 	const std::vector<mesh_edge_ptr> edges = facet.get_edges();
-	for (std::vector<mesh_edge_ptr>::const_iterator ei = edges.begin() ; ei != edges.end() ; ++ei)
+	for (auto ei = edges.begin() ; ei != edges.end() ; ++ei)
 	{
 		os << (ei != edges.begin() ? " --> " : "") << *ei << std::endl;
 	}
@@ -167,7 +171,7 @@ vector<mesh_edge_ptr> mesh_vertex::get_adjacent_edges() const
 {
 	vector<mesh_edge_ptr> edges;
 
-	const mesh_edge_ptr& start_edge = m_edge;
+	mesh_edge_ptr start_edge = m_edge.lock();
 	mesh_edge_ptr e = start_edge;
 	do
 	{
@@ -185,7 +189,7 @@ vector<mesh_facet_ptr> mesh_vertex::get_adjacent_facets() const
 {
 	vector<mesh_facet_ptr> facets;
 
-	const mesh_edge_ptr& start_edge = m_edge;
+	mesh_edge_ptr start_edge = m_edge.lock();
 	mesh_edge_ptr e = start_edge;
 	do
 	{
@@ -204,8 +208,8 @@ maths::vector3d mesh_vertex::get_normal() const
 	maths::vector3d vert_normal;
 
 	vector<mesh_facet_ptr> adj_facets = get_adjacent_facets();
-	for (vector<mesh_facet_ptr>::iterator f = adj_facets.begin() ; f != adj_facets.end() ; ++f)
-		vert_normal += (*f)->get_normal();
+	for (const auto& f : adj_facets)
+		vert_normal += f->get_normal();
 
 	vert_normal /= (double) adj_facets.size();
 	vert_normal.unit();
@@ -225,19 +229,6 @@ ostream& operator<<(ostream& os, const mesh_vertex& vertex)
 triangle_mesh::triangle_mesh(const vector<maths::triangle3d>& triangles)
 {
 	build(triangles);
-}
-
-triangle_mesh::triangle_mesh(const triangle_mesh& mesh)
-{
-	_copy(mesh);
-}
-
-triangle_mesh& triangle_mesh::operator=(const triangle_mesh& mesh)
-{
-	reset();
-	_copy(mesh);
-
-	return *this;
 }
 
 bool triangle_mesh::operator==(const triangle_mesh& other) const
@@ -262,35 +253,11 @@ bool triangle_mesh::operator==(const triangle_mesh& other) const
 
 void triangle_mesh::reset()
 {
-	_destroy();
-
 	m_bbox = maths::bbox3d();
 
 	m_edges.clear();
 	m_verts.clear();
 	m_facets.clear();
-}
-
-void triangle_mesh::_destroy()
-{
-	for (size_t i = 0 ; i < m_edges.size() ; i++)
-		delete m_edges[i];
-	for (size_t i = 0 ; i < m_verts.size() ; i++)
-		delete m_verts[i];
-	for (size_t i = 0 ; i < m_facets.size() ; i++)
-		delete m_facets[i];
-}
-
-void triangle_mesh::_copy(const triangle_mesh& mesh)
-{
-	if (!is_empty())
-		throw std::runtime_error("Cannot copy into a non-empty mesh!");
-
-	std::vector<mesh_facet_ptr> mesh_facets = mesh.get_facets();
-	std::vector<maths::triangle3d> triangles(mesh_facets.size());
-	std::transform(mesh_facets.begin(), mesh_facets.end(), triangles.begin(), boost::bind(&mesh_facet::get_triangle, _1));
-
-	build(triangles);
 }
 
 bool triangle_mesh::is_empty() const
@@ -343,8 +310,11 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 				throw std::runtime_error("Empty edge / vertices association");
 
 			mesh_vertex_ptr v = (*vertex_edges.begin())->get_vertex();
-			if (std::find_if(vertex_edges.begin() + 1, vertex_edges.end(), boost::bind(&mesh_edge::get_vertex, _1) != v) != vertex_edges.end())
+			if (std::find_if(vertex_edges.begin() + 1, vertex_edges.end(),
+				[&v](const mesh_edge_ptr & e) { return e->get_vertex() != v; }) != vertex_edges.end())
+			{
 				throw std::runtime_error("bad edge vertex");
+			}
 
 			if (!v)
 				throw std::runtime_error("got NULL vertex!");
@@ -375,7 +345,9 @@ void triangle_mesh::_add_triangle(const maths::triangle3d& t)
 
 	// Set the facet of this triangle, and set the start edge of the facet
 	mesh_facet_ptr f(new mesh_facet(t.normal()));
-	std::for_each(triangle_edges.begin(), triangle_edges.end(), boost::bind(&mesh_edge::set_facet, _1, f));
+	for (auto & triangle_edge : triangle_edges)
+		triangle_edge->set_facet(f);
+
 	f->set_edge(triangle_edges.back());
 	m_facets.push_back(f);
 
@@ -389,7 +361,7 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 		reset();
 
 	m_vertex_edge_map.clear();
-	std::for_each(triangles.begin(), triangles.end(), boost::bind(&triangle_mesh::_add_triangle, this, _1));
+	std::for_each(triangles.begin(), triangles.end(), std::bind(&triangle_mesh::_add_triangle, this, _1));
 	m_vertex_edge_map.clear();	// don't need this no mo
 
 	// DEBUG
@@ -403,7 +375,7 @@ const maths::bbox3d& triangle_mesh::bbox() const
 		maths::bbox3d mesh_bbox;
 
 		std::vector<maths::vector3d> vertex_points(m_verts.size());
-		std::transform(m_verts.begin(), m_verts.end(), vertex_points.begin(), boost::bind(&mesh_vertex::get_point, _1));
+		std::transform(m_verts.begin(), m_verts.end(), vertex_points.begin(), std::mem_fn(&mesh_vertex::get_point));
 		mesh_bbox.add_points(vertex_points.begin(), vertex_points.end());
 
 		m_bbox = mesh_bbox;
@@ -413,7 +385,7 @@ const maths::bbox3d& triangle_mesh::bbox() const
 
 bool triangle_mesh::is_manifold() const
 {
-	return std::find_if(m_edges.begin(), m_edges.end(), boost::bind(&mesh_edge::is_lamina, _1)) == m_edges.end();
+	return std::find_if(m_edges.begin(), m_edges.end(), std::mem_fn(&mesh_edge::is_lamina)) == m_edges.end();
 }
 
 vector<mesh_edge_ptr> triangle_mesh::get_lamina_edges() const
@@ -447,7 +419,7 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 			{
 				const maths::vector3d& vi_pt = vi->get_point();
 				auto matching_vert = std::find_if(mesh_verts.begin(), mesh_verts.end(),
-					boost::bind(&mesh_vertex::get_point, _1) == vi_pt);
+					[&vi_pt](const mesh_vertex_ptr & vp) { return vp->get_point() == vi_pt; });
 
 				if (matching_vert == mesh_verts.end())
 					throw std::runtime_error("Couldn't find matching vert!");

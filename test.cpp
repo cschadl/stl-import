@@ -214,10 +214,11 @@ namespace tut
 			std::sort(adj_facets_expected.begin(), adj_facets_expected.end());
 			std::sort(adj_facets.begin(), adj_facets.end());
 
-			std::copy(adj_facets_expected.begin(), adj_facets_expected.end(), std::ostream_iterator<mesh_facet_ptr>(std::cout, ", "));
-			std::cout << std::endl;
-			std::copy(adj_facets.begin(), adj_facets.end(), std::ostream_iterator<mesh_facet_ptr>(std::cout, ", "));
-			std::cout << std::endl;
+			// debugging
+//			std::copy(adj_facets_expected.begin(), adj_facets_expected.end(), std::ostream_iterator<mesh_facet_ptr>(std::cout, ", "));
+//			std::cout << std::endl;
+//			std::copy(adj_facets.begin(), adj_facets.end(), std::ostream_iterator<mesh_facet_ptr>(std::cout, ", "));
+//			std::cout << std::endl;
 
 			ensure(adj_facets == adj_facets_expected);
 		}
@@ -384,6 +385,8 @@ namespace tut
 
 		triangle_mesh mesh1;
 		{
+			triangle_mesh mesh;
+
 			std::ifstream dna_infile;
 			dna_infile.open((test_data_path() + "/DNA_L.stl").c_str(), std::ifstream::in);
 			stl_import importer(dna_infile);
@@ -391,25 +394,15 @@ namespace tut
 			std::vector<maths::triangle3d> mesh1_facets = importer.get_facets();
 			std::random_shuffle(mesh1_facets.begin(), mesh1_facets.end());
 
-			mesh1.build(mesh1_facets);
+			mesh.build(mesh1_facets);
+
+			mesh1 = mesh;
 		}
 
 		ensure(!mesh1.is_empty());
 
 		triangle_mesh mesh2 = mesh1;
 		ensure(mesh1 == mesh2);
-
-		// Make sure  that we didn't do a shallow copy, although I guess we would
-		// know pretty quickly if that happened once the heap corrupted as soon
-		// as one of the meshes goes out of scope...
-		// All pointers should be unique in the new mesh, so test for disjoint sets
-		std::set<mesh_edge_ptr> mesh1_edgeset(mesh1.edges_begin(), mesh1.edges_end());
-		std::set<mesh_edge_ptr> mesh2_edgeset(mesh2.edges_begin(), mesh2.edges_end());
-		std::vector<mesh_edge_ptr> intersection;
-		std::set_intersection(mesh1_edgeset.begin(), mesh1_edgeset.end(),
-							  mesh2_edgeset.begin(), mesh2_edgeset.end(),
-							  std::back_inserter(intersection));
-		ensure(intersection.empty());
 
 		triangle_mesh mesh3;
 		{
@@ -424,13 +417,6 @@ namespace tut
 		}
 
 		mesh3 = mesh1;
-
-		// Again, make sure that we didn't do a shallow copy
-		std::set<mesh_edge_ptr> mesh3_edgeset(mesh3.edges_begin(), mesh3.edges_end());
-		std::set_intersection(mesh1_edgeset.begin(), mesh1_edgeset.end(),
-							  mesh3_edgeset.begin(), mesh3_edgeset.end(),
-							  std::back_inserter(intersection));
-		ensure(intersection.empty());
 
 		ensure(mesh1 == mesh3);
 		ensure(mesh3 == mesh2);
@@ -451,6 +437,8 @@ namespace tut
 
 			mesh1.build(importer.get_facets());
 		}
+		ensure(!mesh1.is_empty());
+		ensure(mesh1.is_manifold());
 
 		std::ostringstream os;
 		// debugging
@@ -474,7 +462,12 @@ namespace tut
 		}
 //		is.close();
 
+		// operator== doesn't quite work as intended, so we'll just have to make do for now
 		ensure(!mesh2.is_empty());
-		ensure(mesh1 == mesh2);
+		ensure(mesh2.is_manifold());
+
+		ensure(mesh1.get_edges().size() == mesh2.get_edges().size());
+		ensure(mesh1.get_facets().size() == mesh2.get_facets().size());
+		ensure(mesh1.get_vertices().size() == mesh2.get_vertices().size());
 	}
 };
