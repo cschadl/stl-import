@@ -270,6 +270,10 @@ public:
 
 	std::vector<mesh_edge_ptr> get_lamina_edges() const;
 
+	// Properties
+	double volume() const;	// unit-free
+	double area() const;
+
 	friend std::ostream& operator<<(std::ostream& os, const triangle_mesh& mesh);
 };
 

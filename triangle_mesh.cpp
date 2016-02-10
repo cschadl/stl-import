@@ -453,6 +453,37 @@ triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const
 	return vbo_data;
 }
 
+double triangle_mesh::volume() const
+{
+	// Maybe cache this
+	// Compute signed volume of each triangle in the mesh
+	double volume = std::accumulate(m_facets.begin(), m_facets.end(), 0.0,
+		[](double vol, const mesh_facet_ptr & f)
+		{
+			maths::triangle3d t = f->get_triangle();
+			vol += t.signed_volume();
+
+			return vol;
+		}
+	);
+
+	return std::abs(volume);
+}
+
+double triangle_mesh::area() const
+{
+	// This should probably be cached, too.
+	double area = std::accumulate(m_facets.begin(), m_facets.end(), 0.0,
+		[](double a, const mesh_facet_ptr & f)
+		{
+			maths::triangle3d t = f->get_triangle();
+			return a += t.area();
+		}
+	);
+
+	return area;
+}
+
 ostream& operator<<(ostream& os, const triangle_mesh& mesh)
 {
 	const vector<mesh_facet_ptr>& facets = mesh.get_facets();

@@ -15,12 +15,14 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <sys/param.h>
+#include <math.h>
 
 #include <sstream>
 #include <string>
 #include <vector>
 #include <set>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
@@ -469,5 +471,28 @@ namespace tut
 		ensure(mesh1.get_edges().size() == mesh2.get_edges().size());
 		ensure(mesh1.get_facets().size() == mesh2.get_facets().size());
 		ensure(mesh1.get_vertices().size() == mesh2.get_vertices().size());
+	}
+
+	template<> template<>
+	void stl_test_group_t::object::test<12>()
+	{
+		set_test_name("Sphere area and volume");
+
+		std::ifstream sphere_infile;
+		sphere_infile.open((test_data_path() + "/unit_sphere-ascii.stl").c_str(), std::ifstream::in);
+		stl_import importer(sphere_infile);
+
+		triangle_mesh sphere_mesh;
+		sphere_mesh.build(importer.get_facets());
+
+		ensure(!sphere_mesh.is_empty());
+		ensure(sphere_mesh.is_manifold());
+
+		const double sphere_volume = sphere_mesh.volume();
+		const double sphere_area = sphere_mesh.area();
+
+		// This is just a tessellation of the sphere, so we'll have to use a fairly loose tolerance
+		ensure_distance(sphere_area, 4 * M_PI, 0.03);
+		ensure_distance(sphere_volume, 4.0 / 3.0 * M_PI, 0.03);
 	}
 };
