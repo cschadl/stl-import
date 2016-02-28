@@ -102,6 +102,8 @@ public:
 	void set_edge(const mesh_edge_ptr& edge) { m_edge = edge; }
 
 	const maths::vector3d& get_normal() const { return m_normal; }
+	void set_normal(const maths::vector3d& normal) { m_normal = normal; }
+
 	maths::triangle3d get_triangle() const;
 
 	std::vector<mesh_edge_ptr>		get_edges() const;

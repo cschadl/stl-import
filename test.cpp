@@ -318,7 +318,7 @@ namespace tut
 
 		std::ifstream bottle_infile;
 		const std::string file_path = test_data_path() + "/bottle.stl";
-		bottle_infile.open(file_path.c_str());
+		bottle_infile.open(file_path.c_str(), std::fstream::binary);
 
 		ensure(bottle_infile.is_open());
 		ensure(bottle_infile.good());
