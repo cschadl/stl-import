@@ -123,6 +123,8 @@ void stl_importer_test_t::object::test<3>()
 
 	stl_util::stl_importer importer(test_data_path() + "/unit_cube.stl");
 
+	ensure(importer.num_facets_expected() == 12);
+
 	std::vector<maths::triangle3d> stl_triangles;
 	importer.import(back_inserter(stl_triangles));
 

@@ -359,6 +359,9 @@ bool binary_stl_reader::done() const
 
 size_t binary_stl_reader::get_file_facet_count()
 {
+	string nop_name;
+	read_header(nop_name);	// m_num_facets are initialized in read_header()
+
 	return m_num_facets;
 }
 
