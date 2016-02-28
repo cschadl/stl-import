@@ -316,7 +316,8 @@ bool binary_stl_reader::read_header(string& name)
 	if (!m_istream.good())
 		return false;
 
-	m_num_facets = *reinterpret_cast<uint32_t*>(facet_count_buf);
+	auto num_facets = reinterpret_cast<uint32_t*>(facet_count_buf);
+	m_num_facets = *num_facets;
 
 	return true;
 }
