@@ -92,10 +92,11 @@ void stl_importer_test_t::object::test<1>()
 
 	auto ss = make_shared<istringstream>(get_tetrahedron_stl_str());
 	stl_util::stl_importer importer(ss);
+	ensure_equals(importer.num_facets_expected(), 4);
 
-	std::vector<maths::triangle3d> stl_triangles;
+	std::vector<maths::triangle3d> stl_triangles(importer.num_facets_expected());
 
-	importer.import(back_inserter(stl_triangles));
+	importer.import(stl_triangles.begin());
 
 	ensure(stl_triangles.size() == 4);
 	ensure(importer.num_facets_read() == 4);
@@ -113,6 +114,20 @@ void stl_importer_test_t::object::test<2>()
 
 	ensure(importer.name() == "MYSOLID created by IVCON, original data in file.obj");
 	ensure(stl_triangles.size() == 96);
+}
+
+template <> template <>
+void stl_importer_test_t::object::test<3>()
+{
+	set_test_name("Binary STL");
+
+	stl_util::stl_importer importer(test_data_path() + "/unit_cube.stl");
+
+	std::vector<maths::triangle3d> stl_triangles;
+	importer.import(back_inserter(stl_triangles));
+
+	ensure(importer.name() == "Output by MakerBot Kit for MODO's modo");
+	ensure(stl_triangles.size() == 12);
 }
 
 };

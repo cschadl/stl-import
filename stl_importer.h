@@ -41,11 +41,11 @@ public:
 	size_t get_file_facet_count() override;
 };
 
-/*
 class binary_stl_reader : public stl_reader_interface
 {
 private:
 	std::istream&	m_istream;
+	std::uint32_t	m_num_facets;
 
 public:
 	binary_stl_reader(std::istream& istream);	// throws if stream is not binary
@@ -56,7 +56,6 @@ public:
 
 	size_t get_file_facet_count() override;
 };
-*/
 
 class stl_importer
 {

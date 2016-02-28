@@ -95,6 +95,9 @@ public:
 
 };	// namespace
 
+//////////////////////////
+// ascii_stl_reader
+
 ascii_stl_reader::ascii_stl_reader(istream& istream)
 : m_istream(istream)
 , m_done(false)
@@ -286,6 +289,78 @@ size_t ascii_stl_reader::get_file_facet_count()
 	return facet_count;
 }
 
+//////////////////////////////
+// binary_stl_reader
+binary_stl_reader::binary_stl_reader(istream& istream)
+: m_istream(istream)
+, m_num_facets(0)
+{
+	// Unfortunately, there is no way to test if the stream was opened in binary mode...
+}
+
+bool binary_stl_reader::read_header(string& name)
+{
+	char header_buf[80];
+	m_istream.read(header_buf, 80);
+
+	if (!m_istream.good())
+		return false;
+
+	name = header_buf;
+
+	// Read the expected number of triangles while we're at it
+	// It should be immediately after the header
+	char facet_count_buf[4];
+	m_istream.read(facet_count_buf, 4);
+
+	if (!m_istream.good())
+		return false;
+
+	m_num_facets = *reinterpret_cast<uint32_t*>(facet_count_buf);
+
+	return true;
+}
+
+bool binary_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
+{
+	char vector_buf[12];
+
+	// read normal
+	m_istream.read(vector_buf, 12);
+	if (!m_istream.good())
+		return false;
+
+	auto vector_arr = reinterpret_cast<float*>(vector_buf);
+	normal = maths::convert<double, float>(vector3f(vector_arr, 3));
+
+	// Read facet vertices
+	for (int i = 0 ; i < 3 ; i++)
+	{
+		m_istream.read(vector_buf, 12);
+		if (!m_istream.good())
+			return false;
+
+		auto tv_arr = reinterpret_cast<float*>(vector_buf);
+		triangle[i] = maths::convert<double, float>(vector3f(tv_arr, 3));
+	}
+
+	// Read (and throw away) attribute byte count thing
+	char attrib_count_buf[2];
+	m_istream.read(attrib_count_buf, 2);
+
+	return m_istream.good();
+}
+
+bool binary_stl_reader::done() const
+{
+	return m_istream.eof();
+}
+
+size_t binary_stl_reader::get_file_facet_count()
+{
+	return m_num_facets;
+}
+
 ////////////////////////
 // stl_importer
 
@@ -294,7 +369,8 @@ stl_importer::stl_importer(const shared_ptr<istream>& istream)
 , m_expected_facet_count(0)
 , m_facets_read(0)
 {
-
+	m_stl_reader = create_stl_reader_();
+	m_expected_facet_count = m_stl_reader->get_file_facet_count();
 }
 
 stl_importer::stl_importer(const string& filename)
@@ -309,6 +385,9 @@ stl_importer::stl_importer(const string& filename)
 		throw std::runtime_error("Error opening file");
 
 	m_istream = stl_ifstream;
+
+	m_stl_reader = create_stl_reader_();
+	m_expected_facet_count = m_stl_reader->get_file_facet_count();
 }
 
 unique_ptr<stl_reader_interface> stl_importer::create_stl_reader_()
@@ -326,5 +405,5 @@ unique_ptr<stl_reader_interface> stl_importer::create_stl_reader_()
 	if (solid_substr == "solid")
 		return make_unique<ascii_stl_reader>(*m_istream);
 
-	return nullptr;	// no binary STL reader yet
+	return make_unique<binary_stl_reader>(*m_istream);
 }
