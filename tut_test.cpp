@@ -35,7 +35,11 @@ public:
 		stringstream result_ss;
 		if (tr.result != tut::test_result::ok)
 		{
-			result_ss << "FAILED";
+			result_ss << "FAILED ";
+
+			if (!tr.message.empty())
+				result_ss << "[" << tr.message << " ]";
+
 			tests_failed++;
 		}
 		else
