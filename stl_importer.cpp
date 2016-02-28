@@ -222,6 +222,8 @@ bool ascii_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
 	}
 
 	// Read vertices
+	vector<maths::vector3d> t_verts(3);
+
 	for (int i = 0 ; i < 3 ; i++)
 	{
 		line = get_next_line();
@@ -230,19 +232,17 @@ bool ascii_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
 		if (tokens[0] != "vertex")
 			return false;
 
-		vector3d v;
-
 		auto v_tok = tokens.begin() + 1;
 
 		for (int j = 0 ; j < 3 ; j++)
 		{
 			istringstream ss(*(v_tok + j));
-			if (!(ss >> v[j]))
+			if (!(ss >> t_verts[i][j]))
 				return false;
 		}
-
-		triangle[i] = v;
 	}
+
+	triangle = triangle3d(t_verts[0], t_verts[1], t_verts[2]);
 
 	line = get_next_line();
 	if (done())
@@ -335,6 +335,8 @@ bool binary_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
 	normal = maths::convert<double, float>(vector3f(vector_arr, 3));
 
 	// Read facet vertices
+	vector<vector3d> t_verts(3);
+
 	for (int i = 0 ; i < 3 ; i++)
 	{
 		m_istream.read(vector_buf, 12);
@@ -342,8 +344,10 @@ bool binary_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
 			return false;
 
 		auto tv_arr = reinterpret_cast<float*>(vector_buf);
-		triangle[i] = maths::convert<double, float>(vector3f(tv_arr, 3));
+		t_verts[i] = maths::convert<double, float>(vector3f(tv_arr, 3));
 	}
+
+	triangle = triangle3d(t_verts[0], t_verts[1], t_verts[2]);
 
 	// Read (and throw away) attribute byte count thing
 	char attrib_count_buf[2];
