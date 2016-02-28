@@ -304,8 +304,11 @@ stl_importer::stl_importer(const string& filename)
 	auto stl_ifstream = make_shared<ifstream>();
 
 	stl_ifstream->open(filename, std::fstream::binary);
+
 	if (!stl_ifstream->is_open())
 		throw std::runtime_error("Error opening file");
+
+	m_istream = stl_ifstream;
 }
 
 unique_ptr<stl_reader_interface> stl_importer::create_stl_reader_()

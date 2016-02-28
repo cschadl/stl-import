@@ -63,6 +63,7 @@ class stl_importer
 private:
 	std::shared_ptr<std::istream>			m_istream;
 	std::unique_ptr<stl_reader_interface>	m_stl_reader;
+
 	std::string								m_stl_name;
 
 	size_t									m_expected_facet_count;
@@ -73,6 +74,14 @@ private:
 public:
 	stl_importer(const std::shared_ptr<std::istream>& istream);
 	stl_importer(const std::string& filename);
+
+	const std::string& name() const { return m_stl_name; }
+
+	/** The number of facets that we expect to read from the input STL */
+	size_t num_facets_expected() const { return m_expected_facet_count; }
+
+	/** The number of facets that we actually read from the input STL */
+	size_t num_facets_read() const { return m_facets_read; }
 
 	template <typename OutputIterator>
 	void import(OutputIterator oi)
