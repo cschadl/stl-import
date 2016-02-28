@@ -132,4 +132,20 @@ void stl_importer_test_t::object::test<3>()
 	ensure(stl_triangles.size() == 12);
 }
 
+template <> template <>
+void stl_importer_test_t::object::test<4>()
+{
+	set_test_name("Tab in solid element");
+
+	stl_util::stl_importer importer(test_data_path() + "/sphere.stl");
+
+	auto num_facets_expected = importer.num_facets_expected();
+	ensure(num_facets_expected > 0);
+
+	std::vector<maths::triangle3d> stl_triangles(num_facets_expected);
+	importer.import(stl_triangles.begin());
+
+	ensure(stl_triangles.size() == num_facets_expected);
+}
+
 };

@@ -158,6 +158,10 @@ bool ascii_stl_reader::read_header(string& name)
 	std::string solid_line;
 	getline_crlf_cr(m_istream, solid_line);
 
+	// It doesn't make sense to do most of the things that we do in prep_line
+	// for "solid", but we still want to convert tabs to spaces for tokenization
+	std::replace(solid_line.begin(), solid_line.end(), '\t', ' ');
+
 	auto tokens = tokenize_line_(solid_line);
 
 	if (tokens.empty() || tokens[0] != "solid")
