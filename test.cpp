@@ -5,7 +5,8 @@
  *      Author: cds
  */
 
-#include "stl_import.h"
+#include "stl_import.h"	// deprecated
+#include "stl_importer.h"
 #include "triangle_mesh.h"
 #include "vectors.h"
 #include "misc.h"
@@ -125,7 +126,7 @@ namespace tut
 	};
 
 	typedef test_group<test_stl_import_data> stl_test_group_t;
-	stl_test_group_t stl_test_group("STL importer tests");
+	stl_test_group_t stl_test_group("deprecated tests");
 
 	template<> template<>
 	void stl_test_group_t::object::test<1>()
@@ -443,26 +444,15 @@ namespace tut
 		ensure(mesh1.is_manifold());
 
 		std::ostringstream os;
-		// debugging
-//		std::ofstream os;
-//		os.open("/tmp/blah.stl");
-//		if (!os.is_open())
-//		{
-//			throw std::runtime_error("Error opening file");
-//		}
 		os << mesh1;
-//		os.close();
 
 		std::istringstream is(os.str());
-//		std::ifstream is;
-//		is.open("/tmp/blah.stl");
 
 		triangle_mesh mesh2;
 		{
 			stl_import importer(is);
 			mesh2.build(importer.get_facets());
 		}
-//		is.close();
 
 		// operator== doesn't quite work as intended, so we'll just have to make do for now
 		ensure(!mesh2.is_empty());
@@ -494,5 +484,19 @@ namespace tut
 		// This is just a tessellation of the sphere, so we'll have to use a fairly loose tolerance
 		ensure_distance(sphere_area, 4 * M_PI, 0.03);
 		ensure_distance(sphere_volume, 4.0 / 3.0 * M_PI, 0.03);
+	}
+
+	template<> template<>
+	void stl_test_group_t::object::test<13>()
+	{
+		set_test_name("mesh_triangle_inserter");
+
+		stl_util::stl_importer importer(test_data_path() + "/buddha.stl");
+
+		triangle_mesh mesh;
+		importer.import(mesh_triangle_inserter(mesh));
+
+		ensure("no facets read", importer.num_facets_read() == mesh.get_facets().size());
+		ensure("mesh not solid", mesh.is_manifold());
 	}
 };

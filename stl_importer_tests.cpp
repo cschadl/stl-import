@@ -128,7 +128,7 @@ void stl_importer_test_t::object::test<3>()
 	std::vector<maths::triangle3d> stl_triangles;
 	importer.import(back_inserter(stl_triangles));
 
-	ensure(importer.name() == "Output by MakerBot Kit for MODO's modo");
+	ensure_equals(importer.name(), "Output by MakerBot Kit for MODO's modo");
 	ensure(stl_triangles.size() == 12);
 }
 

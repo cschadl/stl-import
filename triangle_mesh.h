@@ -149,10 +149,6 @@ private:
 
 	mutable maths::bbox3d			m_bbox;	// cached for speed
 
-	/** Adds unique vertices, edges and facets to m_edges, m_facets, and m_verts
-	 *  from the given triangle. */
-	void	_add_triangle(const maths::triangle3d& t);
-
 	// I'm a bit iffy on defining operator< for
 	// maths::n_vector, so for now, we'll compare
 	// points using this functor
@@ -231,6 +227,10 @@ public:
 	/** Builds a new mesh from the given set of triangles */
 	void build(const std::vector<maths::triangle3d>& triangles);
 
+	/** Adds unique vertices, edges and facets to m_edges, m_facets, and m_verts
+	 *  from the given triangle. */
+	void	add_triangle(const maths::triangle3d& t);
+
 	const std::vector<mesh_edge_ptr>& get_edges() const { return m_edges; }
 	const std::vector<mesh_facet_ptr>& get_facets() const { return m_facets; }
 	const std::vector<mesh_vertex_ptr>& get_vertices() const { return m_verts; }
@@ -284,5 +284,24 @@ public:
  *  		mesh serializer class, if only to control binary or ASCII output.
  */
 std::ostream& operator<<(std::ostream& os, const triangle_mesh& mesh);
+
+/** Output iterator for inserting triangles into a mesh.
+ */
+
+class mesh_triangle_inserter : public std::iterator<std::output_iterator_tag, void, void, void, void>
+{
+private:
+	triangle_mesh*	m_triangle_mesh;	// not owned
+
+public:
+	mesh_triangle_inserter() = delete;
+	explicit mesh_triangle_inserter(triangle_mesh& mesh) : m_triangle_mesh(&mesh) { }
+
+	mesh_triangle_inserter& operator*() { return *this; }
+	mesh_triangle_inserter& operator++() { return *this; }
+	mesh_triangle_inserter& operator++(int) { return *this; }
+
+	mesh_triangle_inserter& operator=(const maths::triangle3d& t) { m_triangle_mesh->add_triangle(t); return *this; }
+};
 
 #endif /* TRIANGLE_MESH_H_ */

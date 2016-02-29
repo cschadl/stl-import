@@ -265,7 +265,7 @@ bool triangle_mesh::is_empty() const
 	return m_edges.empty();
 }
 
-void triangle_mesh::_add_triangle(const maths::triangle3d& t)
+void triangle_mesh::add_triangle(const maths::triangle3d& t)
 {
 	vector<mesh_edge_ptr> triangle_edges;
 
@@ -361,11 +361,8 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 		reset();
 
 	m_vertex_edge_map.clear();
-	std::for_each(triangles.begin(), triangles.end(), std::bind(&triangle_mesh::_add_triangle, this, _1));
+	std::for_each(triangles.begin(), triangles.end(), std::bind(&triangle_mesh::add_triangle, this, _1));
 	m_vertex_edge_map.clear();	// don't need this no mo
-
-	// DEBUG
-
 }
 
 const maths::bbox3d& triangle_mesh::bbox() const
