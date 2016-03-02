@@ -412,10 +412,18 @@ unique_ptr<stl_reader_interface> stl_importer::create_stl_reader_()
 
 	string line;
 	getline_crlf_cr(*m_istream, line);
+	ascii_stl_reader::prep_line_(line);
 
 	string solid_substr(line.begin(), line.begin() + 5);
 	if (solid_substr == "solid")
-		return make_unique<ascii_stl_reader>(*m_istream);
+	{
+		// Because some assholes think it's OK to start a binary STL with "solid"...
+		getline_crlf_cr(*m_istream, line);
+		ascii_stl_reader::prep_line_(line);
+		auto tokens = ascii_stl_reader::tokenize_line_(line);
+		if (tokens.size() > 2 && tokens[0] == "facet" && tokens[1] == "normal")
+			return make_unique<ascii_stl_reader>(*m_istream);
+	}
 
 	return make_unique<binary_stl_reader>(*m_istream);
 }

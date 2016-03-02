@@ -26,9 +26,11 @@ private:
 	std::istream&	m_istream;
 	bool			m_done;
 
+public:
 	static void prep_line_(std::string& line);	// converts tabs to spaces and makes all characters lowercase
 	static std::vector<std::string> tokenize_line_(const std::string& line);
 
+private:
 	std::string get_next_line();
 
 public:
