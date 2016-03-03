@@ -323,8 +323,17 @@ void triangle_mesh::add_triangle(const maths::triangle3d& t)
 
 			std::vector<mesh_edge_ptr>::iterator p_sym_edge = std::find_if(vertex_edges.begin(), vertex_edges.end(),
 				[&e_v, &t, i](mesh_edge_ptr e) {
-					return 	e->get_prev_edge()->get_end_vertex()->get_point() == e_v &&
-							e->get_prev_edge()->get_vertex()->get_point() == t[i + 1];
+					auto pe = e ? e->get_prev_edge() : nullptr;
+					if (!pe)
+						return false;
+
+					auto pe_ev = pe->get_end_vertex();
+					auto pe_v = pe->get_vertex();
+
+					if (!pe_ev || !pe_v)
+						return false;
+
+					return pe_ev->get_point() == e_v && pe_v->get_point() == t[i + 1];
 				}
 			);
 
