@@ -217,6 +217,12 @@ maths::vector3d mesh_vertex::get_normal() const
 	return vert_normal;
 }
 
+maths::vector3d& mesh_vertex::set_point(const maths::vector3d& point)
+{
+	m_point = point;
+	return m_point;
+}
+
 ostream& operator<<(ostream& os, const mesh_vertex& vertex)
 {
 	os << vertex.get_point();
@@ -488,6 +494,17 @@ double triangle_mesh::area() const
 	);
 
 	return area;
+}
+
+void triangle_mesh::center()
+{
+	const auto& vertices = get_vertices();
+	auto centroid = maths::centroid(vertices.begin(), vertices.end(), std::mem_fn(&mesh_vertex::get_point));
+
+	for (const auto& vert : vertices)
+	{
+		vert->set_point(vert->get_point() - centroid);
+	}
 }
 
 ostream& operator<<(ostream& os, const triangle_mesh& mesh)

@@ -133,6 +133,7 @@ public:
 	// facets to this vertex populated in the mesh...
 	maths::vector3d get_normal() const;
 	const maths::vector3d& get_point() const { return m_point; }
+	maths::vector3d& set_point(const maths::vector3d& p);
 
 	// edge_iterator, vertex_iterator
 
@@ -280,6 +281,9 @@ public:
 
 	std::string& name() { return m_name; }
 	const std::string& name() const { return m_name; }
+
+	// Centers the mesh
+	void center();
 
 	friend std::ostream& operator<<(std::ostream& os, const triangle_mesh& mesh);
 };
