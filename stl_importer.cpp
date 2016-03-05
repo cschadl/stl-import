@@ -1,6 +1,7 @@
 #include <numeric>
 #include <sstream>
 #include <fstream>
+#include <iterator>
 
 #include "stl_importer.h"
 
@@ -312,6 +313,16 @@ bool binary_stl_reader::read_header(string& name)
 
 	name = header_buf;
 
+	// Sometimes there is junk after the name.  Chop of any non-printable characters.
+	auto npc = std::find_if(name.begin(), name.end(), [](char c) { return !::isprint(c); });
+	if (npc != name.end())
+		name.resize(std::distance(name.begin(), npc));
+
+	// Gratuitous whitespace
+	auto spaces = std::adjacent_find(name.begin(), name.end(), [](char a, char b) { return ::isspace(a) && ::isspace(b); });
+	if (spaces != name.end())
+		name.resize(std::distance(name.begin(), spaces));
+
 	// Read the expected number of triangles while we're at it
 	// It should be immediately after the header
 	char facet_count_buf[4];
@@ -419,8 +430,10 @@ unique_ptr<stl_reader_interface> stl_importer::create_stl_reader_()
 	{
 		// Because some assholes think it's OK to start a binary STL with "solid"...
 		getline_crlf_cr(*m_istream, line);
+
 		ascii_stl_reader::prep_line_(line);
 		auto tokens = ascii_stl_reader::tokenize_line_(line);
+
 		if (tokens.size() > 2 && tokens[0] == "facet" && tokens[1] == "normal")
 			return make_unique<ascii_stl_reader>(*m_istream);
 	}

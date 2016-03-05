@@ -149,6 +149,8 @@ private:
 
 	mutable maths::bbox3d			m_bbox;	// cached for speed
 
+	std::string						m_name;
+
 	// I'm a bit iffy on defining operator< for
 	// maths::n_vector, so for now, we'll compare
 	// points using this functor
@@ -275,6 +277,9 @@ public:
 	// Properties
 	double volume() const;	// unit-free
 	double area() const;
+
+	std::string& name() { return m_name; }
+	const std::string& name() const { return m_name; }
 
 	friend std::ostream& operator<<(std::ostream& os, const triangle_mesh& mesh);
 };
