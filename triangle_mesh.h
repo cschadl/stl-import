@@ -113,7 +113,7 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const mesh_facet& facet);
 };
 
-class mesh_vertex
+class mesh_vertex : public std::enable_shared_from_this<mesh_vertex>
 {
 private:
 	mesh_edge_weak	m_edge;

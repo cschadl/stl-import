@@ -193,6 +193,9 @@ vector<mesh_facet_ptr> mesh_vertex::get_adjacent_facets() const
 	mesh_edge_ptr e = start_edge;
 	do
 	{
+		if (std::find(facets.begin(), facets.end(), e->get_facet()) != facets.end())
+			break;
+
 		facets.push_back(e->get_facet());
 		e = e->get_prev_edge()->get_sym_edge();
 		if (!e)
