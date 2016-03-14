@@ -59,6 +59,15 @@ public:
 	size_t get_file_facet_count() override;
 };
 
+class import_cancel_exception : public std::exception
+{
+public:
+	const char* what() const noexcept override
+	{
+		return "User canceled STL import";
+	}
+};
+
 class stl_importer
 {
 private:
@@ -110,7 +119,14 @@ public:
 
 			if (m_stl_reader->read_facet(triangle, normal))
 			{
-				*oi++ = triangle;
+				try
+				{
+					*oi++ = triangle;
+				}
+				catch (import_cancel_exception&)
+				{
+					return;
+				}
 
 				m_facets_read++;
 			}
