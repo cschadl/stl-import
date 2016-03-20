@@ -20,9 +20,9 @@ using std::setprecision;
 using namespace std::placeholders;
 
 ///////////////////////////
-// mesh_edge
+// mesh_halfedge
 
-bool mesh_edge::operator==(const mesh_edge& e) const
+bool mesh_halfedge::operator==(const mesh_halfedge& e) const
 {
 	if (e.get_start_point() != this->get_start_point())
 		return false;
@@ -36,7 +36,7 @@ bool mesh_edge::operator==(const mesh_edge& e) const
 	return true;
 }
 
-vector<mesh_facet_ptr> mesh_edge::get_adjacent_facets() const
+vector<mesh_facet_ptr> mesh_halfedge::get_adjacent_facets() const
 {
 	vector<mesh_facet_ptr> facets;
 
@@ -45,17 +45,17 @@ vector<mesh_facet_ptr> mesh_edge::get_adjacent_facets() const
 	{
 		facets.push_back(facet);
 
-		mesh_edge_ptr sym_edge = get_sym_edge();
-		if (sym_edge)
+		mesh_halfedge_ptr sym_halfedge = get_sym_halfedge();
+		if (sym_halfedge)
 		{
-			facets.push_back(sym_edge->get_facet());
+			facets.push_back(sym_halfedge->get_facet());
 		}
 	}
 
 	return facets;
 }
 
-vector<mesh_vertex_ptr> mesh_edge::get_verts() const
+vector<mesh_vertex_ptr> mesh_halfedge::get_verts() const
 {
 	vector<mesh_vertex_ptr> verts;
 	if (!m_vert.expired())
@@ -67,29 +67,43 @@ vector<mesh_vertex_ptr> mesh_edge::get_verts() const
 	return verts;
 }
 
-mesh_vertex_ptr mesh_edge::get_end_vertex() const
+mesh_vertex_ptr mesh_halfedge::get_end_vertex() const
 {
-	// We could use the symmetric edge to get the end vertex,
-	// but, the edge could be lamina, and we use this when
+	// We could use the symmetric halfedge to get the end vertex,
+	// but, the halfedge could be lamina, and we use this when
 	// we build the mesh in triangle_mesh::build()
-	return get_next_edge()->get_vertex();
+	return get_next_halfedge()->get_vertex();
 }
 
-maths::vector3d mesh_edge::get_start_point() const
+maths::vector3d mesh_halfedge::get_start_point() const
 {
 	return get_start_vertex()->get_point();
 }
 
-maths::vector3d mesh_edge::get_end_point() const
+maths::vector3d mesh_halfedge::get_end_point() const
 {
 	return get_end_vertex()->get_point();
 }
 
-ostream& operator<<(ostream& os, const mesh_edge& edge)
+ostream& operator<<(ostream& os, const mesh_halfedge& halfedge)
 {
-	os << *(edge.get_vertex()) << " => " << *(edge.get_end_vertex());
+	os << *(halfedge.get_vertex()) << " => " << *(halfedge.get_end_vertex());
 	return os;
 }
+
+///////////////////////
+// mesh_edge
+
+mesh_edge::mesh_edge(const mesh_halfedge_ptr & he, const mesh_halfedge_ptr & he_sym)
+: m_he(he)
+, m_he_sym(he_sym)
+{
+
+}
+
+maths::vector3d mesh_edge::p0() const { return get_halfedge()->get_start_point(); }
+
+maths::vector3d mesh_edge::p1() const { return get_halfedge()->get_end_point(); }
 
 ///////////////////////
 // mesh_facet
@@ -102,34 +116,34 @@ maths::triangle3d mesh_facet::get_triangle() const
 	return triangle;
 }
 
-vector<mesh_edge_ptr> mesh_facet::get_edges() const
+vector<mesh_halfedge_ptr> mesh_facet::get_halfedges() const
 {
-	vector<mesh_edge_ptr> edges;
+	vector<mesh_halfedge_ptr> halfedges;
 
-	mesh_edge_ptr start_edge = m_edge.lock();
-	mesh_edge_ptr e = start_edge;
+	mesh_halfedge_ptr start_halfedge = m_halfedge.lock();
+	mesh_halfedge_ptr e = start_halfedge;
 	do
 	{
-		edges.push_back(e);
-		e = e->get_next_edge();
+		halfedges.push_back(e);
+		e = e->get_next_halfedge();
 	}
-	while (e != start_edge);
+	while (e != start_halfedge);
 
-	return edges;
+	return halfedges;
 }
 
 vector<mesh_vertex_ptr> mesh_facet::get_verts() const
 {
 	vector<mesh_vertex_ptr> verts;
 
-	mesh_edge_ptr start_edge = m_edge.lock();
-	mesh_edge_ptr e = start_edge;
+	mesh_halfedge_ptr start_halfedge = m_halfedge.lock();
+	mesh_halfedge_ptr e = start_halfedge;
 	do
 	{
 		verts.push_back(e->get_vertex());
-		e = e->get_next_edge();
+		e = e->get_next_halfedge();
 	}
-	while (e != start_edge);
+	while (e != start_halfedge);
 
 	return verts;
 }
@@ -138,25 +152,25 @@ vector<mesh_facet_ptr> mesh_facet::get_adjacent_facets() const
 {
 	vector<mesh_facet_ptr> facets;
 
-	mesh_edge_ptr start_edge = m_edge.lock();
-	mesh_edge_ptr e = start_edge;
+	mesh_halfedge_ptr start_halfedge = m_halfedge.lock();
+	mesh_halfedge_ptr e = start_halfedge;
 	do
 	{
-		facets.push_back(e->get_sym_edge()->get_facet());
+		facets.push_back(e->get_sym_halfedge()->get_facet());
 		// make sure facets.back() != this...
-		e = e->get_next_edge();
+		e = e->get_next_halfedge();
 	}
-	while (e != start_edge);
+	while (e != start_halfedge);
 
 	return facets;
 }
 
 ostream& operator<<(ostream& os, const mesh_facet& facet)
 {
-	const std::vector<mesh_edge_ptr> edges = facet.get_edges();
-	for (auto ei = edges.begin() ; ei != edges.end() ; ++ei)
+	const std::vector<mesh_halfedge_ptr> halfedges = facet.get_halfedges();
+	for (auto ei = halfedges.begin() ; ei != halfedges.end() ; ++ei)
 	{
-		os << (ei != edges.begin() ? " --> " : "") << *ei << std::endl;
+		os << (ei != halfedges.begin() ? " --> " : "") << *ei << std::endl;
 	}
 
 	// Also print normal and adjacent facets?
@@ -167,41 +181,41 @@ ostream& operator<<(ostream& os, const mesh_facet& facet)
 //////////////////////////
 // mesh_vertex
 
-vector<mesh_edge_ptr> mesh_vertex::get_adjacent_edges() const
+vector<mesh_halfedge_ptr> mesh_vertex::get_adjacent_halfedges() const
 {
-	vector<mesh_edge_ptr> edges;
+	vector<mesh_halfedge_ptr> halfedges;
 
-	mesh_edge_ptr start_edge = m_edge.lock();
-	mesh_edge_ptr e = start_edge;
+	mesh_halfedge_ptr start_halfedge = m_halfedge.lock();
+	mesh_halfedge_ptr e = start_halfedge;
 	do
 	{
-		edges.push_back(e);
-		e = e->get_prev_edge()->get_sym_edge();
+		halfedges.push_back(e);
+		e = e->get_prev_halfedge()->get_sym_halfedge();
 		if (!e)
-			break;	// TODO - case when edge is lamina
+			break;	// TODO - case when halfedge is lamina
 	}
-	while (e != start_edge);
+	while (e != start_halfedge);
 
-	return edges;
+	return halfedges;
 }
 
 vector<mesh_facet_ptr> mesh_vertex::get_adjacent_facets() const
 {
 	vector<mesh_facet_ptr> facets;
 
-	mesh_edge_ptr start_edge = m_edge.lock();
-	mesh_edge_ptr e = start_edge;
+	mesh_halfedge_ptr start_halfedge = m_halfedge.lock();
+	mesh_halfedge_ptr e = start_halfedge;
 	do
 	{
 		if (std::find(facets.begin(), facets.end(), e->get_facet()) != facets.end())
 			break;
 
 		facets.push_back(e->get_facet());
-		e = e->get_prev_edge()->get_sym_edge();
+		e = e->get_prev_halfedge()->get_sym_halfedge();
 		if (!e)
 			break;
 	}
-	while(e != start_edge);
+	while(e != start_halfedge);
 
 	return facets;
 }
@@ -242,87 +256,87 @@ triangle_mesh::triangle_mesh(const vector<maths::triangle3d>& triangles)
 
 bool triangle_mesh::operator==(const triangle_mesh& other) const
 {
-	vector<mesh_edge_ptr> this_edges = this->get_edges();
-	vector<mesh_edge_ptr> other_edges = other.get_edges();
+	vector<mesh_halfedge_ptr> this_halfedges = this->get_halfedges();
+	vector<mesh_halfedge_ptr> other_halfedges = other.get_halfedges();
 
 	// Use some quick and easy cases to early-out
-	if (this_edges.size() != other_edges.size())
+	if (this_halfedges.size() != other_halfedges.size())
 		return false;
 
 	if (this->is_manifold() != other.is_manifold())
 		return false;
 
-	// Sort each edge based on its start and end points
-	std::sort(this_edges.begin(), this_edges.end(), compare_edges());
-	std::sort(other_edges.begin(), other_edges.end(), compare_edges());
+	// Sort each halfedge based on its start and end points
+	std::sort(this_halfedges.begin(), this_halfedges.end(), compare_halfedges());
+	std::sort(other_halfedges.begin(), other_halfedges.end(), compare_halfedges());
 
-	return std::equal(this_edges.begin(), this_edges.end(), other_edges.begin(),
-		[](mesh_edge_ptr e1, mesh_edge_ptr e2) { return *e1 == *e2; });
+	return std::equal(this_halfedges.begin(), this_halfedges.end(), other_halfedges.begin(),
+		[](mesh_halfedge_ptr e1, mesh_halfedge_ptr e2) { return *e1 == *e2; });
 }
 
 void triangle_mesh::reset()
 {
 	m_bbox = maths::bbox3d();
 
-	m_edges.clear();
+	m_halfedges.clear();
 	m_verts.clear();
 	m_facets.clear();
 }
 
 bool triangle_mesh::is_empty() const
 {
-	return m_edges.empty();
+	return m_halfedges.empty();
 }
 
 void triangle_mesh::add_triangle(const maths::triangle3d& t)
 {
-	vector<mesh_edge_ptr> triangle_edges;
+	vector<mesh_halfedge_ptr> triangle_halfedges;
 
-	// First, connect the edges of the triangle
+	// First, connect the halfedges of the triangle
 	for (int i = 0 ; i < 3 ; i++)
 	{
-		mesh_edge_ptr e(new mesh_edge);
-		triangle_edges.push_back(e);
+		mesh_halfedge_ptr e(new mesh_halfedge);
+		triangle_halfedges.push_back(e);
 	}
 
 	for (int i = 0 ; i < 3 ; i++)
 	{
-		triangle_edges[i]->set_next_edge(triangle_edges[(i + 1) % 3]);
-		triangle_edges[i]->set_prev_edge(i == 0 ? triangle_edges[2] : triangle_edges[i - 1]);
+		triangle_halfedges[i]->set_next_halfedge(triangle_halfedges[(i + 1) % 3]);
+		triangle_halfedges[i]->set_prev_halfedge(i == 0 ? triangle_halfedges[2] : triangle_halfedges[i - 1]);
 	}
 
 	// Set the vertices of this triangle
 	for (int i = 0 ; i < 3 ; i++)
 	{
-		mesh_edge_ptr e = triangle_edges[i];
+		mesh_halfedge_ptr e = triangle_halfedges[i];
 		const maths::vector3d& e_v = t[i];
 
-		vertex_edge_map_t::iterator ve = m_vertex_edge_map.find(e_v);
-		if (ve == m_vertex_edge_map.end())
+		vertex_halfedge_map_t::iterator ve = m_vertex_halfedge_map.find(e_v);
+		if (ve == m_vertex_halfedge_map.end())
 		{
-			mesh_vertex_ptr edge_start_vert(new mesh_vertex(e_v));
-			e->set_vertex(edge_start_vert);
-			edge_start_vert->set_edge(e);
+			mesh_vertex_ptr halfedge_start_vert(new mesh_vertex(e_v));
+			e->set_vertex(halfedge_start_vert);
+			halfedge_start_vert->set_halfedge(e);
 
-			// Insert this edge / vertex pair into our map
-			std::vector<mesh_edge_ptr> vertex_edges;
-			vertex_edges.push_back(e);
-			m_vertex_edge_map.insert(std::make_pair(e_v, vertex_edges));
+			// Insert this halfedge / vertex pair into our map
+			std::vector<mesh_halfedge_ptr> vertex_halfedges;
+			vertex_halfedges.push_back(e);
+			m_vertex_halfedge_map.insert(std::make_pair(e_v, vertex_halfedges));
 
 			// Insert the vertex to the global list of vertices
-			m_verts.push_back(edge_start_vert);
+			m_verts.push_back(halfedge_start_vert);
 		}
 		else
 		{
-			std::vector<mesh_edge_ptr>& vertex_edges = ve->second;
-			if (vertex_edges.empty())
-				throw std::runtime_error("Empty edge / vertices association");
+			std::vector<mesh_halfedge_ptr>& vertex_halfedges = ve->second;
+			if (vertex_halfedges.empty())
+				throw std::runtime_error("Empty halfedge / vertices association");
 
-			mesh_vertex_ptr v = (*vertex_edges.begin())->get_vertex();
-			if (std::find_if(vertex_edges.begin() + 1, vertex_edges.end(),
-				[&v](const mesh_edge_ptr & e) { return e->get_vertex() != v; }) != vertex_edges.end())
+			mesh_vertex_ptr v = (*vertex_halfedges.begin())->get_vertex();
+			if (std::find_if(vertex_halfedges.begin() + 1, vertex_halfedges.end(),
+				[&v](const mesh_halfedge_ptr & e) { return e->get_vertex() != v; }) != vertex_halfedges.end())
 			{
-				throw std::runtime_error("bad edge vertex");
+				throw std::runtime_error("bad halfedge vertex");
 			}
 
 			if (!v)
@@ -330,9 +344,9 @@ void triangle_mesh::add_triangle(const maths::triangle3d& t)
 
 			e->set_vertex(v);
 
-			std::vector<mesh_edge_ptr>::iterator p_sym_edge = std::find_if(vertex_edges.begin(), vertex_edges.end(),
-				[&e_v, &t, i](mesh_edge_ptr e) {
-					auto pe = e ? e->get_prev_edge() : nullptr;
+			auto p_sym_halfedge = std::find_if(vertex_halfedges.begin(), vertex_halfedges.end(),
+				[&e_v, &t, i](mesh_halfedge_ptr e) {
+					auto pe = e ? e->get_prev_halfedge() : nullptr;
 					if (!pe)
 						return false;
 
@@ -346,31 +360,33 @@ void triangle_mesh::add_triangle(const maths::triangle3d& t)
 				}
 			);
 
-			if (p_sym_edge != vertex_edges.end())
+			if (p_sym_halfedge != vertex_halfedges.end())
 			{
-				mesh_edge_ptr e_sym = (*p_sym_edge)->get_prev_edge();
+				mesh_halfedge_ptr e_sym = (*p_sym_halfedge)->get_prev_halfedge();
 
 				if (e_sym->get_end_vertex()->get_point() != e_v)
-					throw std::runtime_error("symmetric edge point mismatch");
+					throw std::runtime_error("symmetric halfedge point mismatch");
 
-				e->set_sym_edge(e_sym);
-				e_sym->set_sym_edge(e);
+				e->set_sym_halfedge(e_sym);
+				e_sym->set_sym_halfedge(e);
+
+				m_edges.emplace_back(std::make_shared<mesh_edge>(e, e_sym));
 			}
 
-			vertex_edges.push_back(e);
+			vertex_halfedges.push_back(e);
 		}
 	}
 
-	// Set the facet of this triangle, and set the start edge of the facet
+	// Set the facet of this triangle, and set the start halfedge of the facet
 	mesh_facet_ptr f(new mesh_facet(t.normal()));
-	for (auto & triangle_edge : triangle_edges)
-		triangle_edge->set_facet(f);
+	for (auto & triangle_halfedge : triangle_halfedges)
+		triangle_halfedge->set_facet(f);
 
-	f->set_edge(triangle_edges.back());
+	f->set_halfedge(triangle_halfedges.back());
 	m_facets.push_back(f);
 
-	// Add the triangle edges to the list of edges
-	std::copy(triangle_edges.begin(), triangle_edges.end(), std::back_inserter(m_edges));
+	// Add the triangle halfedges to the list of halfedges
+	std::copy(triangle_halfedges.begin(), triangle_halfedges.end(), std::back_inserter(m_halfedges));
 }
 
 void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
@@ -378,9 +394,9 @@ void triangle_mesh::build(const vector<maths::triangle3d>& triangles)
 	if (!is_empty())
 		reset();
 
-	m_vertex_edge_map.clear();
+	m_vertex_halfedge_map.clear();
 	std::for_each(triangles.begin(), triangles.end(), std::bind(&triangle_mesh::add_triangle, this, _1));
-	m_vertex_edge_map.clear();	// don't need this no mo
+	m_vertex_halfedge_map.clear();	// don't need this no mo
 }
 
 const maths::bbox3d& triangle_mesh::bbox() const
@@ -400,15 +416,15 @@ const maths::bbox3d& triangle_mesh::bbox() const
 
 bool triangle_mesh::is_manifold() const
 {
-	return std::find_if(m_edges.begin(), m_edges.end(), std::mem_fn(&mesh_edge::is_lamina)) == m_edges.end();
+	return std::find_if(m_halfedges.begin(), m_halfedges.end(), std::mem_fn(&mesh_halfedge::is_lamina)) == m_halfedges.end();
 }
 
-vector<mesh_edge_ptr> triangle_mesh::get_lamina_edges() const
+vector<mesh_halfedge_ptr> triangle_mesh::get_lamina_halfedges() const
 {
-	vector<mesh_edge_ptr> lamina_edges;
-	std::copy_if(m_edges.begin(), m_edges.end(), std::back_inserter(lamina_edges), std::mem_fn(&mesh_edge::is_lamina));
+	vector<mesh_halfedge_ptr> lamina_halfedges;
+	std::copy_if(m_halfedges.begin(), m_halfedges.end(), std::back_inserter(lamina_halfedges), std::mem_fn(&mesh_halfedge::is_lamina));
 
-	return lamina_edges;
+	return lamina_halfedges;
 }
 
 triangle_mesh::vbo_data_t triangle_mesh::get_vbo_data() const

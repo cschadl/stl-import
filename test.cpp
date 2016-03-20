@@ -192,11 +192,11 @@ namespace tut
 		triangle_mesh mesh;
 		mesh.build(importer.get_facets());
 
-		ensure(mesh.get_edges().size() == 12);
+		ensure(mesh.get_halfedges().size() == 12);
 		ensure(mesh.get_vertices().size() == 4);
 		ensure(mesh.get_facets().size() == 4);
 		ensure(mesh.is_manifold());
-		ensure(mesh.get_lamina_edges().empty());
+		ensure(mesh.get_lamina_halfedges().empty());
 
 		// Facets should be in the order that they were read...
 		const vector<mesh_facet_ptr>& facets = mesh.get_facets();
@@ -245,7 +245,7 @@ namespace tut
 
 		// Euler's formula |V| + |F| - |E|/2 = 2 should hold
 		// for sphere (or, maybe all convex shapes?)
-		ensure(mesh.get_edges().size() == 864);
+		ensure(mesh.get_halfedges().size() == 864);
 		ensure(mesh.get_vertices().size() == 146);
 		ensure(mesh.get_facets().size() == 288);
 
@@ -458,7 +458,7 @@ namespace tut
 		ensure(!mesh2.is_empty());
 		ensure(mesh2.is_manifold());
 
-		ensure(mesh1.get_edges().size() == mesh2.get_edges().size());
+		ensure(mesh1.get_halfedges().size() == mesh2.get_halfedges().size());
 		ensure(mesh1.get_facets().size() == mesh2.get_facets().size());
 		ensure(mesh1.get_vertices().size() == mesh2.get_vertices().size());
 	}
