@@ -3,98 +3,17 @@
 #include <fstream>
 #include <iterator>
 
+#include <getline_crlf_lf.h>
+#include <finally.h>
+#include <make_unique.h>
+
 #include "stl_importer.h"
 
 using namespace std;
-using namespace stl_util;
+using namespace stl_util;	// change this...
+using namespace stlutil;
 using namespace maths;
 
-// the shit in this namespace needs to go in a stl_util library or something
-namespace
-{
-
-/** Reads a line from a DOS CRLF file or a UNIX CR file
- *  Use instead of getline().
- *  Ganked from http://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
- */
-istream& getline_crlf_cr(istream& is, std::string& t)
-{
-	t.clear();
-
-	// The characters in the stream are read one-by-one using a std::streambuf.
-	// That is faster than reading them one-by-one using the std::istream.
-	// Code that uses streambuf this way must be guarded by a sentry object.
-	// The sentry object performs various tasks,
-	// such as thread synchronization and updating the stream state.
-
-	istream::sentry se(is, true);
-	std::streambuf* sb = is.rdbuf();
-
-	for(;;) {
-		int c = sb->sbumpc();
-		switch (c) {
-		case '\n':
-			return is;
-		case '\r':
-			if(sb->sgetc() == '\n')
-				sb->sbumpc();
-			return is;
-		case EOF:
-			// Also handle the case when the last line has no line ending
-			if(t.empty())
-				is.setstate(std::ios::eofbit);
-			return is;
-		default:
-			t += (char)c;
-		}
-	}
-
-	return is;
-}
-
-template<class T> struct _Unique_if {
-	typedef unique_ptr<T> _Single_object;
-};
-
-template<class T> struct _Unique_if<T[]> {
-	typedef unique_ptr<T[]> _Unknown_bound;
-};
-
-template<class T, size_t N> struct _Unique_if<T[N]> {
-	typedef void _Known_bound;
-};
-
-template<class T, class... Args>
-	typename _Unique_if<T>::_Single_object
-	make_unique(Args&&... args) {
-		return unique_ptr<T>(new T(std::forward<Args>(args)...));
-	}
-
-template<class T>
-	typename _Unique_if<T>::_Unknown_bound
-	make_unique(size_t n) {
-		typedef typename remove_extent<T>::type U;
-		return unique_ptr<T>(new U[n]());
-	}
-
-template<class T, class... Args>
-	typename _Unique_if<T>::_Known_bound
-	make_unique(Args&&...) = delete;
-
-class finally
-{
-private:
-	std::function<void()> m_func;
-
-public:
-	finally(const std::function<void()> & func) : m_func(func) { }
-	~finally() { m_func(); }
-
-	finally(const finally&) = delete;
-	finally& operator=(const finally&) = delete;
-};
-
-};	// namespace
 
 //////////////////////////
 // ascii_stl_reader
@@ -112,7 +31,7 @@ string ascii_stl_reader::get_next_line()
 
 	while (line.empty())
 	{
-		getline_crlf_cr(m_istream, line);
+		getline_crlf_lf(m_istream, line);
 
 		if (m_istream.eof())
 			break;
@@ -157,7 +76,7 @@ vector<string> ascii_stl_reader::tokenize_line_(const string& line)
 bool ascii_stl_reader::read_header(string& name)
 {
 	std::string solid_line;
-	getline_crlf_cr(m_istream, solid_line);
+	getline_crlf_lf(m_istream, solid_line);
 
 	// It doesn't make sense to do most of the things that we do in prep_line
 	// for "solid", but we still want to convert tabs to spaces for tokenization
@@ -422,14 +341,14 @@ unique_ptr<stl_reader_interface> stl_importer::create_stl_reader_()
 	finally f([this]() { m_istream->seekg(0); });
 
 	string line;
-	getline_crlf_cr(*m_istream, line);
+	getline_crlf_lf(*m_istream, line);
 	ascii_stl_reader::prep_line_(line);
 
 	string solid_substr(line.begin(), line.begin() + 5);
 	if (solid_substr == "solid")
 	{
 		// Because some assholes think it's OK to start a binary STL with "solid"...
-		getline_crlf_cr(*m_istream, line);
+		getline_crlf_lf(*m_istream, line);
 
 		ascii_stl_reader::prep_line_(line);
 		auto tokens = ascii_stl_reader::tokenize_line_(line);
