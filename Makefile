@@ -5,7 +5,9 @@ CFLAGS_DEP=-std=c++11
 OUTDIR=build-Release
 
 OBJS=$(shell ls *.cpp | perl -pe 's/\.cpp$$/\.o/' | tr "\n" " ")
+OBJS_LIB=$(shell find . ! '(' -iregex '.*test.+' ')' -name '*.cpp' | perl -pe 's/^\.\/(.+?)\.cpp$$/$$1\.o/' | tr "\n" " ")
 EXECUTABLE=stl-import
+SHAREDLIB=stlimport.so
 
 OUTOBJS=$(addprefix $(OUTDIR)/, $(OBJS))
 OUTEXE=$(OUTDIR)/$(EXECUTABLE)
@@ -16,6 +18,11 @@ OUTOBJS_DEBUG=$(addprefix $(OUTDIR_DEBUG)/, $(OBJS))
 OUTEXE_DEBUG=$(OUTDIR_DEBUG)/$(EXECUTABLE)
 CFLAGS_DEBUG=-Wall -O0 -ggdb3 -std=c++11
 CPPFLAGS_DEBUG=-DDEBUG
+
+# Shared library configuration
+OUTDIR_SHARED=build-Release
+OUTOBJS_SHARED=$(addprefix $(OUTDIR)/, $(OBJS_LIB))
+OUTSHARED=$(OUTDIR_SHARED)/$(SHAREDLIB)
 
 all: $(OUTEXE)
 
@@ -29,9 +36,23 @@ $(OUTEXE) : $(OUTOBJS)
 $(OUTDIR)/%.o: %.cpp
 	$(CXX) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 	$(CXX) -MM $(CFLAGS_DEP) $(INCLUDE) $< | perl -pe 's/^\w+\.o:/$(OUTDIR)\/$$&/' > $(OUTDIR)/$*.d
-	
+
+shared: CFLAGS:=$(CFLAGS) -fPIC
+shared: $(OUTSHARED)
+
+$(OUTSHARED) : $(OUTOBJS_SHARED)
+	$(CXX) -shared $(OUTOBJS_SHARED) -o $(OUTSHARED)
+
+# This generates dependency rules
+-include $(OUTOBJS_SHARED:.o=.d)
+
+## Default rule
+$(OUTDIR_SHARED)/%.o: %.cpp
+	$(CXX) -c $(CFLAGS) $(INCLUDE) -o $@ $<
+	$(CXX) -MM $(CFLAGS_DEP) $(INCLUDE) $< | perl -pe 's/^\w+\.o:/$(OUTDIR_SHARED)\/$$&/' > $(OUTDIR_SHARED)/$*.d
+
 clean:
-	rm -rf $(OUTDIR)/*.o $(OUTEXE) $(OUTDIR)/*.d
+	rm -rf $(OUTDIR)/*.o $(OUTEXE) $(OUTSHARED) $(OUTDIR)/*.d
 
 debug: CFLAGS=$(CFLAGS_DEBUG) $(CPPFLAGS_DEBUG)
 debug: $(OUTEXE_DEBUG)
@@ -46,6 +67,6 @@ $(OUTEXE_DEBUG): $(OUTOBJS_DEBUG)
 $(OUTDIR_DEBUG)/%.o: %.cpp
 	$(CXX) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 	$(CXX) -MM $(CFLAGS_DEP) $(INCLUDE) $< | perl -pe 's/^\w+\.o:/$(OUTDIR_DEBUG)\/$$&/' > $(OUTDIR_DEBUG)/$*.d
-	
+
 debug_clean: OUTDIR=$(OUTDIR_DEBUG)
 debug_clean: clean
