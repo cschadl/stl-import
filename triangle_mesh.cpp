@@ -13,6 +13,7 @@
 #include <tuple>
 #include <iomanip>
 #include <functional>
+#include <numeric>
 
 using std::vector;
 using std::ostream;

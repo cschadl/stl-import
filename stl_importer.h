@@ -2,6 +2,7 @@
 #define STL_IMPORTER_H_
 
 #include <memory>
+#include <vector>
 
 #include "geom.h"
 
