@@ -122,11 +122,11 @@ vector3d stl_import::_read_vector(istream& is)
 		throw stl_import_exception(err_ss.str());
 	}
 
-	std::valarray<double> facet_pts(0.0, 3);
+	vector3d facet_pts;
 	for (size_t i = 0 ; i < 3 ; i++)
 		facet_pts[i] = _read_str_double(n_strs[i]);
 
-	return vector3d(facet_pts);
+	return facet_pts;
 }
 
 void stl_import::_read_solid(istream& is)
