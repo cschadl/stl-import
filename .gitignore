@@ -4,3 +4,5 @@
 .*.swp
 Release/
 Debug/
+build-Debug/
+build-Release/
