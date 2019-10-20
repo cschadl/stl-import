@@ -1,7 +1,7 @@
 CXX=g++
 INCLUDE=-I /usr/include/eigen3 -I ../mathstuff -I ../stlutil
-CFLAGS=-Wall -O3 -std=c++11
-CFLAGS_DEP=-std=c++11
+CFLAGS=-Wall -O3 -std=c++17
+CFLAGS_DEP=-std=c++17
 OUTDIR=Release
 
 OBJS=$(shell ls *.cpp | perl -pe 's/\.cpp$$/\.o/' | tr "\n" " ")
@@ -16,7 +16,7 @@ OUTEXE=$(OUTDIR)/$(EXECUTABLE)
 OUTDIR_DEBUG=Debug
 OUTOBJS_DEBUG=$(addprefix $(OUTDIR_DEBUG)/, $(OBJS))
 OUTEXE_DEBUG=$(OUTDIR_DEBUG)/$(EXECUTABLE)
-CFLAGS_DEBUG=-Wall -O0 -ggdb3 -std=c++11
+CFLAGS_DEBUG=-Wall -O0 -ggdb3 -std=c++17
 CPPFLAGS_DEBUG=-DDEBUG
 
 # Shared library configuration

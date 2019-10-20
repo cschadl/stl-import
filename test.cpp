@@ -18,6 +18,7 @@
 #include <sys/param.h>
 #include <math.h>
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
+
 #include <tut.h>
 
 using std::istringstream;
@@ -365,9 +367,12 @@ namespace tut
 		const std::vector<unsigned int>& vis = vbo_data.indices;
 		while (i < vbo_data.indices.size())
 		{
-			maths::vector3d v1(vbo_data.verts[vis[i]], 3);
-			maths::vector3d v2(vbo_data.verts[vis[i + 1]], 3);
-			maths::vector3d v3(vbo_data.verts[vis[i + 2]], 3);
+			double * vbo_0 = vbo_data.verts[vis[i]];
+			double * vbo_1 = vbo_data.verts[vis[i + 1]];
+			double * vbo_2 = vbo_data.verts[vis[i + 2]];
+			maths::vector3d v1(vbo_0[0], vbo_0[1], vbo_0[2]);
+			maths::vector3d v2(vbo_1[0], vbo_1[1], vbo_1[2]);
+			maths::vector3d v3(vbo_2[0], vbo_2[1], vbo_2[2]);
 
 			vbo_triangles.push_back(maths::triangle3d(v1, v2, v3));
 

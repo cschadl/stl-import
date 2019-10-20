@@ -2,10 +2,11 @@
 #include <sstream>
 #include <fstream>
 #include <iterator>
+#include <algorithm>
 
-#include <getline_crlf_lf.h>
-#include <finally.h>
-#include <make_unique.h>
+#include <stlutil/getline_crlf_lf.h>
+#include <stlutil/finally.h>
+#include <stlutil/make_unique.h>
 
 #include "stl_importer.h"
 
@@ -266,7 +267,7 @@ bool binary_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
 		return false;
 
 	auto vector_arr = reinterpret_cast<float*>(vector_buf);
-	normal = maths::convert<double, float>(vector3f(vector_arr, 3));
+	normal = maths::convert<double, float>(vector3f(vector_arr[0], vector_arr[1], vector_arr[2]));
 
 	// Read facet vertices
 	vector<vector3d> t_verts(3);
@@ -278,7 +279,7 @@ bool binary_stl_reader::read_facet(triangle3d& triangle, vector3d& normal)
 			return false;
 
 		auto tv_arr = reinterpret_cast<float*>(vector_buf);
-		t_verts[i] = maths::convert<double, float>(vector3f(tv_arr, 3));
+		t_verts[i] = maths::convert<double, float>(vector3f(tv_arr[0], tv_arr[1], tv_arr[2]));
 	}
 
 	triangle = triangle3d(t_verts[0], t_verts[1], t_verts[2]);
