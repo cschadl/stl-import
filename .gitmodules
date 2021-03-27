@@ -1,0 +1,6 @@
+[submodule "submodules/mathstuff"]
+	path = submodules/mathstuff
+	url = git@github.com:cschadl/mathstuff.git
+[submodule "submodules/stlutil"]
+	path = submodules/stlutil
+	url = git@github.com:cschadl/stlutil.git
