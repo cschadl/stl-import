@@ -1,5 +1,5 @@
 CXX=g++
-INCLUDE=-I /usr/include/eigen3 -I ../mathstuff -I ../stlutil
+INCLUDE=-I /usr/include/eigen3 -I ./submodules/mathstuff -I ./submodules/stlutil
 CFLAGS=-Wall -O3 -std=c++17
 CFLAGS_DEP=-std=c++17
 OUTDIR=Release
