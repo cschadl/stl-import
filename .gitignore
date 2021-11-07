@@ -7,3 +7,4 @@ Debug/
 build-Debug/
 build-Release/
 .vscode/
+cmake-build/
