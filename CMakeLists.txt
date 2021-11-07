@@ -9,16 +9,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(STL_IMPORT_LIB "stl_import")
 set(STL_IMPORT_TESTS "stl_import_tests")
 
+if (NOT STLIMPORT_PATH)
+    set(STLIMPORT_PATH ${CMAKE_SOURCE_DIR})
+endif(NOT STLIMPORT_PATH)
+
 option(BUILD_STATIC "Build static library" OFF)
 option(BUILD_TESTS "Build unit tests" ON)
-set(MATHSTUFF_PATH ${CMAKE_SOURCE_DIR}/submodules/mathstuff CACHE STRING "path to mathstuff")
-set(STLUTIL_PATH ${CMAKE_SOURCE_DIR}/submodules/stlutil CACHE STRING "path to stlutil")
+set(MATHSTUFF_PATH ${STLIMPORT_PATH}/submodules/mathstuff CACHE STRING "path to mathstuff")
+set(STLUTIL_PATH ${STLIMPORT_PATH}/submodules/stlutil CACHE STRING "path to stlutil")
 
-set(STL_IMPORT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/stl_import)
+set(STL_IMPORT_INCLUDE_DIR ${STLIMPORT_PATH}/stl_import)
 
 file(GLOB_RECURSE STL_IMPORT_H ${STL_IMPORT_INCLUDE_DIR}/*.h)
 file(GLOB_RECURSE STL_IMPORT_SRC ${STL_IMPORT_INCLUDE_DIR}/*.cpp)
-file(GLOB_RECURSE STL_IMPORT_TESTS_SRC ${CMAKE_SOURCE_DIR}/tests/*.cpp)
+file(GLOB_RECURSE STL_IMPORT_TESTS_SRC ${STLIMPORT_PATH}/tests/*.cpp)
 
 find_package(Eigen3 REQUIRED)
 
@@ -44,11 +48,13 @@ if (BUILD_TESTS)
     target_include_directories(${STL_IMPORT_TESTS} PUBLIC ${STL_IMPORT_INCLUDE_DIR})
 endif(BUILD_TESTS)
 
-add_custom_target(copy-test-data
-    ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/tests/test_data ${CMAKE_BINARY_DIR}/test_data
-    DEPENDS ${STL_IMPORT_TESTS}
-)
+if (BUILD_TESTS)
+    add_custom_target(copy-test-data
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${STLIMPORT_PATH}/tests/test_data ${CMAKE_BINARY_DIR}/test_data
+        DEPENDS ${STL_IMPORT_TESTS}
+    )
+endif(BUILD_TESTS)
 
 install (TARGETS ${STL_IMPORT_LIB}
         LIBRARY DESTINATION lib
