@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 #include <tut.h>
 
@@ -65,6 +66,8 @@ public:
 			 << fixed << setprecision(2) << success_percent << "% success" << endl;
 	}
 };
+
+std::string g_test_data_path = "./test_data/";
 
 int main(int argc, char** argv)
 {

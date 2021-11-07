@@ -44,6 +44,12 @@ if (BUILD_TESTS)
     target_include_directories(${STL_IMPORT_TESTS} PUBLIC ${STL_IMPORT_INCLUDE_DIR})
 endif(BUILD_TESTS)
 
+add_custom_target(copy-test-data
+    ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/tests/test_data ${CMAKE_BINARY_DIR}/test_data
+    DEPENDS ${STL_IMPORRT_TESTS}
+)
+
 install (TARGETS ${STL_IMPORT_LIB}
         LIBRARY DESTINATION lib
         PUBLIC_HEADER DESTINATION inc)
