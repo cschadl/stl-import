@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.10)
 
 set(PROJECT_NAME "stl_import_project")
 project(${PROJECT_NAME} VERSION 0.2 LANGUAGES CXX)
@@ -58,4 +58,5 @@ endif(BUILD_TESTS)
 
 install (TARGETS ${STL_IMPORT_LIB}
         LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
         PUBLIC_HEADER DESTINATION inc)
