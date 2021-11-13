@@ -40,7 +40,7 @@ set_target_properties(${STL_IMPORT_LIB} PROPERTIES PUBLIC_HEADER "${STL_IMPORT_H
 
 if (BUILD_TESTS)
     add_executable(${STL_IMPORT_TESTS} ${STL_IMPORT_TESTS_SRC})
-    target_link_libraries(${STL_IMPORT_TESTS} PRIVATE ${STL_IMPORT_LIB})
+    target_link_libraries(${STL_IMPORT_TESTS} PUBLIC ${STL_IMPORT_LIB})
 
     target_include_directories(${STL_IMPORT_TESTS} PUBLIC ${MATHSTUFF_PATH})
     target_include_directories(${STL_IMPORT_TESTS} PUBLIC ${STLUTIL_PATH})
