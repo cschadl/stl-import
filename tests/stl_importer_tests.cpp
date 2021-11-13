@@ -11,38 +11,19 @@
 
 using namespace std;
 
+extern std::string g_test_data_path;
+
 namespace tut
 {
 
 struct stl_importer_test_data
 {
-	std::string _test_data_path;
-
 	stl_importer_test_data()
 	{
-		// Get path of TUT test data.
-		// We'll assume that it's one directory up in test_data/
-		// Note - this isn't portable at all
-		char tmp[32];
-		char path_buf[MAXPATHLEN];
-
-		::sprintf(tmp, "/proc/%d/exe", ::getpid());
-		const int bytes = std::min(::readlink(tmp, path_buf, MAXPATHLEN), (ssize_t)(MAXPATHLEN - 1));
-		if (bytes < 0)
-			throw std::runtime_error("Couldn't readlink() path");	// shouldn't happen...
-
-		const std::string cur_path = ::dirname(path_buf);
-
-		char cur_path_buf[MAXPATHLEN];	// because dirname() doesn't take a const char*...
-		std::size_t cur_path_len = cur_path.copy(cur_path_buf, cur_path.length());
-		cur_path_buf[cur_path_len] = '\0';
-
-		const std::string base_path = ::dirname(cur_path_buf);
-
-		const_cast<std::string&>(_test_data_path) = base_path + "/test_data";
+		
 	}
 
-	const std::string& test_data_path() const { return _test_data_path; }
+	const std::string& test_data_path() const { return g_test_data_path; }
 
 	static string get_tetrahedron_stl_str()
 	{
