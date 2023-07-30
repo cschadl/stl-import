@@ -9,3 +9,4 @@ build-Release/
 .vscode/
 cmake-build/
 cmake-install/
+build/
