@@ -2,6 +2,7 @@
 #include <array>
 #include <stack>
 #include <vector>
+#include <unordered_set>
 #include <kdtree/kdtree.hpp>
 
 namespace cds
@@ -64,6 +65,19 @@ namespace detail_
         FacetType origFacetIndex;
         FacetType newFacetIndex;
     };
+
+    struct facet_hash
+    {
+        std::size_t operator()(const std::array<size_t, 3>& f) const
+        {
+            std::size_t h = 0;
+
+            for (auto e : f)
+                h ^= std::hash<int>{}(e)  + 0x9e3779b9 + (h << 6) + (h >> 2); 
+                
+            return h;
+        }
+    };
 }
 
 template <typename PointIteratorType, typename TriIteratorType, typename PointType>
@@ -112,6 +126,8 @@ bool build_mesh(
     std::vector<PointType> mesh_points;
     std::vector<FacetType> mesh_facets;
 
+    std::unordered_set<FacetType, detail_::facet_hash> visited_facets; 
+
     while (!facet_stack.empty())
     {
         FacetType new_facet;
@@ -119,6 +135,11 @@ bool build_mesh(
 
         std::tie(old_facet, new_facet) = facet_stack.top();
         facet_stack.pop();
+
+        if (visited_facets.find(old_facet) != visited_facets.end())
+            continue;
+
+        visited_facets.insert(old_facet);
 
         // Make a new triangle from this triangle
         for (int i = 0 ; i < 3 ; i++)
