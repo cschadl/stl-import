@@ -15,6 +15,7 @@ endif(NOT STLIMPORT_PATH)
 
 option(BUILD_STATIC "Build static library" OFF)
 option(BUILD_TESTS "Build unit tests" ON)
+option(KDTREE_PATH "Path to kdtree" "") # TODO - make this required
 set(MATHSTUFF_PATH ${STLIMPORT_PATH}/submodules/mathstuff CACHE STRING "path to mathstuff")
 set(STLUTIL_PATH ${STLIMPORT_PATH}/submodules/stlutil CACHE STRING "path to stlutil")
 
@@ -35,6 +36,7 @@ endif(NOT BUILD_STATIC)
 target_include_directories(${STL_IMPORT_LIB} PUBLIC ${MATHSTUFF_PATH})
 target_include_directories(${STL_IMPORT_LIB} PUBLIC ${STLUTIL_PATH})
 target_include_directories(${STL_IMPORT_LIB} PUBLIC ${EIGEN3_INCLUDE_DIR})
+target_include_directories(${STL_IMPORT_LIB} PUBLIC ${KDTREE_PATH})
 
 set_target_properties(${STL_IMPORT_LIB} PROPERTIES PUBLIC_HEADER "${STL_IMPORT_H}")
 
