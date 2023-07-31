@@ -126,17 +126,22 @@ bool build_mesh(
             if (new_facet[i] != invalidIdx)
                 continue;   // This vert is an existing vert one or more facets
 
-            auto const p = *(pts_begin + new_facet[i]);
+            auto const p = *(pts_begin + old_facet[i]);
 
             // Add this new point to the list of mesh vertices
             mesh_points.push_back(p);
             size_t pt_idx = mesh_points.size() - 1;
+
+            new_facet[i] = pt_idx;
 
             auto const& near_pts_tris = lookup_tree.radius_search(p, tolerance);
             for (const auto& np : near_pts_tris)
             {
                 auto const& p = np.p;
                 auto const& t = np.tri;
+
+                if (np.tri == old_facet)
+                    continue;
 
                 FacetType np_new_tri{
                     pt_idx,
@@ -145,7 +150,7 @@ bool build_mesh(
                 };
 
                 // TODO - check for degenerate triangle
-                facet_stack.emplace(std::make_pair(old_facet, np_new_tri));
+                facet_stack.emplace(std::make_pair(np.tri, np_new_tri));
             }
         }
 
