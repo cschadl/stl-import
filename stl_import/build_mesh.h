@@ -12,6 +12,8 @@ namespace cgl
 
 namespace detail_
 {
+    constexpr size_t invalidIdx = std::numeric_limits<size_t>::max();
+
     // A point and its associated triangle
     template <typename PointType>
     struct pointAndTriangle
@@ -19,9 +21,39 @@ namespace detail_
         PointType p;
         typename mesh2<PointType>::FacetType tri;
 
-        using value_type = kdtree::point_traits<PointType>::value_type;
+        using value_type = typename kdtree::point_traits<PointType>::value_type;
 
         value_type operator[](size_t idx) const { return p[idx]; }
+
+        static constexpr size_t Dim = 3;
+
+        pointAndTriangle(value_type v)
+            : p(v)
+            , tri{invalidIdx, invalidIdx, invalidIdx}
+        {
+
+        }
+
+        pointAndTriangle(PointType const& p_)
+            : p(p_)
+            , tri{invalidIdx, invalidIdx, invalidIdx}
+        {
+
+        }
+
+        pointAndTriangle(PointType const& p_, typename mesh2<PointType>::FacetType const& facet)
+            : p(p_)
+            , tri(facet)
+        {
+
+        }
+
+        pointAndTriangle()
+            : p(value_type(0))
+            , tri{invalidIdx, invalidIdx, invalidIdx}
+        {
+
+        }
     };
 
     template <typename PointType>
@@ -43,36 +75,36 @@ bool build_mesh(
 {
     using FacetType = typename mesh2<PointType>::FacetType;
 
-    static_assert(std::is_same_v<decltype(*pts_begin), PointType>);
-    static_assert(std::is_same_v<decltype(*tris_begin), FacetType);
-    static_assert(kdtree::point_traits<PointType>::dim() == 3);
+    constexpr size_t invalidIdx = detail_::invalidIdx;
 
-    constexpr size_t invalidIdx = std::numeric_limits<size_t>::max();
+    static_assert(std::is_same_v<std::decay_t<decltype(*pts_begin)>, PointType>);
+    static_assert(std::is_same_v<std::decay_t<decltype(*tris_begin)>, FacetType>);
+    static_assert(kdtree::point_traits<PointType>::dim() == 3);
     
-    std::vector<detail_::pointAndTriangle> pts_tris;
+    std::vector<detail_::pointAndTriangle<PointType>> pts_tris;
     for (auto tri_it = tris_begin ; tri_it != tris_end ; ++tri_it)
     {
         auto const& t = *tri_it;
         for (int j = 0 ; j < 3; j++)
         {
             auto const pt_idx = t[j];
-            auto const& pt = tris_begin + pt_idx;
+            auto const& pt = *(pts_begin + pt_idx);
 
             pts_tris.emplace_back(
-                detail_::pointAndTriangle{ pt, t }
+                detail_::pointAndTriangle<PointType>{ pt, t }
             );
         }
     }
 
-    kdtree::kd_tree<detail_::pointAndTriangle> lookup_tree;
+    kdtree::kd_tree<detail_::pointAndTriangle<PointType>> lookup_tree;
     lookup_tree.build(pts_tris.begin(), pts_tris.end());
 
-    std::stack<facetMap> facet_stack;
+    std::stack<std::pair<FacetType, FacetType>> facet_stack;
 
     facet_stack.emplace(
         std::make_pair(
             *tris_begin++,
-            FacetType{ invalidIdx, invalidIdx, invalidIdx }
+            FacetType{ invalidIdx, invalidIdx, invalidIdx })
     );
 
     auto tri_it = tris_begin;
@@ -80,7 +112,7 @@ bool build_mesh(
     std::vector<PointType> mesh_points;
     std::vector<FacetType> mesh_facets;
 
-    while (!facetStack.empty())
+    while (!facet_stack.empty())
     {
         FacetType new_facet;
         FacetType old_facet;
@@ -94,7 +126,7 @@ bool build_mesh(
             if (new_facet[i] != invalidIdx)
                 continue;   // This vert is an existing vert one or more facets
 
-            auto const p = pts_begin + new_facet[i];
+            auto const p = *(pts_begin + new_facet[i]);
 
             // Add this new point to the list of mesh vertices
             mesh_points.push_back(p);
@@ -119,6 +151,8 @@ bool build_mesh(
 
         mesh_facets.push_back(new_facet);
     }
+
+    outMesh = mesh2<PointType>(mesh_points, mesh_facets);
 
     return true;
 }

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <array>
 
@@ -10,7 +12,8 @@ namespace cgl
 template <typename PointType>
 class mesh2
 {
-    using value_type = PointType::value_type;
+public:
+    using value_type = typename PointType::value_type;
 
     using IndexType = size_t;
     using FacetType = std::array<IndexType, 3>;  // triangle defined by vert indices
