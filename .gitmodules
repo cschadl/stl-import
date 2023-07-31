@@ -4,3 +4,6 @@
 [submodule "submodules/stlutil"]
 	path = submodules/stlutil
 	url = git@github.com:cschadl/stlutil.git
+[submodule "submodules/kdtree"]
+	path = submodules/kdtree
+	url = https://github.com/cschadl/kdtree.git
