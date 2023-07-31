@@ -77,7 +77,7 @@ void build_mesh_test_data_t::object::test<1>()
     points.push_back(vector3d(1., 0., 1.));
     points.push_back(vector3d(0., 0., 1.));
 
-    for (size_t i = 0 ; i < points.size() / 3 ; )
+    for (size_t i = 0 ; i < points.size() ; )
         facets.push_back(facet_type{i++, i++, i++});
 
     cds::cgl::mesh2<vector3d> cube_mesh;
