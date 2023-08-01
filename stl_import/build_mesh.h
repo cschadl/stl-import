@@ -1,4 +1,5 @@
 #include "mesh2.h"
+#include <algorithm>
 #include <array>
 #include <stack>
 #include <vector>
@@ -17,10 +18,11 @@ namespace detail_
 
     // A point and its associated triangle
     template <typename PointType>
-    struct pointAndTriangle
+    struct pointAndIndex
     {
         PointType p;
-        typename mesh2<PointType>::FacetType tri;
+        size_t index;
+        bool inserted { false };
 
         using value_type = typename kdtree::point_traits<PointType>::value_type;
 
@@ -28,54 +30,32 @@ namespace detail_
 
         static constexpr size_t Dim = 3;
 
-        pointAndTriangle(value_type v)
+        pointAndIndex(value_type v)
             : p(v)
-            , tri{invalidIdx, invalidIdx, invalidIdx}
+            , index(invalidIdx)
         {
 
         }
 
-        pointAndTriangle(PointType const& p_)
+        pointAndIndex(PointType const& p_)
             : p(p_)
-            , tri{invalidIdx, invalidIdx, invalidIdx}
+            , index(invalidIdx)
         {
 
         }
 
-        pointAndTriangle(PointType const& p_, typename mesh2<PointType>::FacetType const& facet)
+        pointAndIndex(PointType const& p_, size_t index)
             : p(p_)
-            , tri(facet)
+            , index(index)
         {
 
         }
 
-        pointAndTriangle()
+        pointAndIndex()
             : p(value_type(0))
-            , tri{invalidIdx, invalidIdx, invalidIdx}
+            , index(invalidIdx)
         {
 
-        }
-    };
-
-    template <typename PointType>
-    struct facetMap
-    {
-        using FacetType = typename mesh2<PointType>::FacetType;
-
-        FacetType origFacetIndex;
-        FacetType newFacetIndex;
-    };
-
-    struct facet_hash
-    {
-        std::size_t operator()(const std::array<size_t, 3>& f) const
-        {
-            std::size_t h = 0;
-
-            for (auto e : f)
-                h ^= std::hash<int>{}(e)  + 0x9e3779b9 + (h << 6) + (h >> 2); 
-                
-            return h;
         }
     };
 }
@@ -89,96 +69,93 @@ bool build_mesh(
 {
     using FacetType = typename mesh2<PointType>::FacetType;
 
-    constexpr size_t invalidIdx = detail_::invalidIdx;
-
     static_assert(std::is_same_v<std::decay_t<decltype(*pts_begin)>, PointType>);
     static_assert(std::is_same_v<std::decay_t<decltype(*tris_begin)>, FacetType>);
     static_assert(kdtree::point_traits<PointType>::dim() == 3);
+
+    constexpr size_t invalidIdx = detail_::invalidIdx;
     
-    std::vector<detail_::pointAndTriangle<PointType>> pts_tris;
+    // "Collapse" the points into a unique set of vertices (to within tol)
+
+    std::vector<detail_::pointAndIndex<PointType>> point_indices;
     for (auto tri_it = tris_begin ; tri_it != tris_end ; ++tri_it)
     {
-        auto const& t = *tri_it;
-        for (int j = 0 ; j < 3; j++)
+        auto const& tri = *tri_it;
+        for (int i = 0 ; i < 3 ; i++)
         {
-            auto const pt_idx = t[j];
-            auto const& pt = *(pts_begin + pt_idx);
+            // TODO - handle degenerate vertices
+            auto const& pt = *(pts_begin + tri[i]);
 
-            pts_tris.emplace_back(
-                detail_::pointAndTriangle<PointType>{ pt, t }
-            );
+            point_indices.emplace_back(pt, tri[i]);
         }
     }
 
-    kdtree::kd_tree<detail_::pointAndTriangle<PointType>> lookup_tree;
-    lookup_tree.build(pts_tris.begin(), pts_tris.end());
+    kdtree::kd_tree<detail_::pointAndIndex<PointType>> pt_orig_idx_tree;
+    pt_orig_idx_tree.build(point_indices.begin(), point_indices.end());
 
-    std::stack<std::pair<FacetType, FacetType>> facet_stack;
+    std::unordered_set<size_t> processed_indices;
+    std::vector<PointType> unique_vertices;
 
-    facet_stack.emplace(
-        std::make_pair(
-            *tris_begin++,
-            FacetType{ invalidIdx, invalidIdx, invalidIdx })
-    );
-
-    auto tri_it = tris_begin;
-
-    std::vector<PointType> mesh_points;
-    std::vector<FacetType> mesh_facets;
-
-    std::unordered_set<FacetType, detail_::facet_hash> visited_facets; 
-
-    while (!facet_stack.empty())
+    for (auto pt_it = pts_begin ; pt_it != pts_end ; ++pt_it)
     {
-        FacetType new_facet;
-        FacetType old_facet;
+        auto const& pt_orig_indices = pt_orig_idx_tree.radius_search(*pt_it, tolerance);
+        if (pt_orig_indices.empty())
+            return false;   // Shouldn't happen
 
-        std::tie(old_facet, new_facet) = facet_stack.top();
-        facet_stack.pop();
+        // The search returns all indices associated with this point in the original
+        // list of triangles. Add them to the processed_indices map (so we don't process them again)
+        if (std::none_of(pt_orig_indices.begin(), pt_orig_indices.end(),
+            [&processed_indices](const auto& pt_idx)
+            {
+                return processed_indices.find(pt_idx.index) != processed_indices.end();
+            }))
+        {
+            unique_vertices.push_back(pt_orig_indices.front().p);
+            
+            std::transform(pt_orig_indices.begin(), pt_orig_indices.end(),
+                std::inserter(processed_indices, processed_indices.end()),
+                [](const auto& pt_idx) { return pt_idx.index; });
+        }
+    }
 
-        if (visited_facets.find(old_facet) != visited_facets.end())
-            continue;
+    // OK, now make a new lookup tree out of our unique vertices
 
-        visited_facets.insert(old_facet);
+    std::vector<detail_::pointAndIndex<PointType>> unique_vert_indices;
+    for (size_t i = 0 ; i < unique_vertices.size() ; i++)
+    {
+        unique_vert_indices.emplace_back(unique_vertices[i], i);
+    }
 
-        // Make a new triangle from this triangle
+    kdtree::kd_tree<detail_::pointAndIndex<PointType>> vertex_lookup_tree;
+    vertex_lookup_tree.build(unique_vert_indices.begin(), unique_vert_indices.end());
+
+    // Finally, build new connected facets from our unique verts
+
+    std::vector<FacetType> mesh_facets;
+    for (auto tri_it = tris_begin ; tri_it != tris_end ; ++tri_it)
+    {
+        auto const& orig_tri = *tri_it;
+
+        FacetType new_facet{ invalidIdx, invalidIdx, invalidIdx };
+
         for (int i = 0 ; i < 3 ; i++)
         {
-            if (new_facet[i] != invalidIdx)
-                continue;   // This vert is an existing vert one or more facets
+            auto const& p = *(pts_begin + orig_tri[i]);
+            
+            auto const vert_and_index = vertex_lookup_tree.k_nn(p, 1);
+            if (vert_and_index.empty())
+                return false;   // shouldn't happen
 
-            auto const p = *(pts_begin + old_facet[i]);
-
-            // Add this new point to the list of mesh vertices
-            mesh_points.push_back(p);
-            size_t pt_idx = mesh_points.size() - 1;
-
-            new_facet[i] = pt_idx;
-
-            auto const& near_pts_tris = lookup_tree.radius_search(p, tolerance);
-            for (const auto& np : near_pts_tris)
-            {
-                auto const& p = np.p;
-                auto const& t = np.tri;
-
-                if (np.tri == old_facet)
-                    continue;
-
-                FacetType np_new_tri{
-                    pt_idx,
-                    invalidIdx,
-                    invalidIdx
-                };
-
-                // TODO - check for degenerate triangle
-                facet_stack.emplace(std::make_pair(np.tri, np_new_tri));
-            }
+            new_facet[i] = vert_and_index.front().index;
+            
+            if (new_facet[i] == invalidIdx)
+                return false;   // Also shouldn't happen
         }
 
         mesh_facets.push_back(new_facet);
     }
 
-    outMesh = mesh2<PointType>(mesh_points, mesh_facets);
+    outMesh = mesh2<PointType>(unique_vertices, mesh_facets);
 
     return true;
 }
