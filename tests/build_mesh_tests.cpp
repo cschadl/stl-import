@@ -140,25 +140,25 @@ void build_mesh_test_data_t::object::test<1>()
 
                 auto const& n = f_tri.normal();
 
-                return n.is_close(expected_n, 1.0e-12);
+                auto dot = n * expected_n;
+                return maths::close(dot, 1.0, 1.0e-12);
             });
 
         ensure_equals(std::distance(mesh_facets.begin(), facets_with_expected_normal), 2);
 
-        // This doesn't seem to work - I think some normals are getting flipped
-        // auto f1 = *(facets.begin());
-        // auto f2 = *(std::next(facets.begin()));
+        auto f1 = *(mesh_facets.begin());
+        auto f2 = *(std::next(mesh_facets.begin()));
 
-        // std::sort(f1.begin(), f1.end());
-        // std::sort(f2.begin(), f2.end());
+        std::sort(f1.begin(), f1.end());
+        std::sort(f2.begin(), f2.end());
 
-        // std::vector<mesh2<vector3d>::IndexType> shared_indices;
-        // std::set_intersection(
-        //     f1.begin(), f1.end(),
-        //     f2.begin(), f2.end(),
-        //     std::back_inserter(shared_indices));
+        std::vector<mesh2<vector3d>::IndexType> shared_indices;
+        std::set_intersection(
+            f1.begin(), f1.end(),
+            f2.begin(), f2.end(),
+            std::back_inserter(shared_indices));
 
-        // ensure_equals(shared_indices.size(), 2);
+        ensure_equals(shared_indices.size(), 2);
     }
 }
 
