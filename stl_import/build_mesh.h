@@ -22,7 +22,6 @@ namespace detail_
     {
         PointType p;
         size_t index;
-        bool inserted { false };
 
         using value_type = typename kdtree::point_traits<PointType>::value_type;
 
