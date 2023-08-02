@@ -30,53 +30,53 @@ void build_mesh_test_data_t::object::test<1>()
     std::vector<maths::vector3d> points;
     std::vector<facet_type> facets;
     
-    points.push_back(vector3d(0., 1., 1.));
-    points.push_back(vector3d(0., 1., 0.));
-    points.push_back(vector3d(0., 0., 1.));
+    points.emplace_back(0., 1., 1.);
+    points.emplace_back(0., 1., 0.);
+    points.emplace_back(0., 0., 1.);
 
-    points.push_back(vector3d(0., 0., 1.));
-    points.push_back(vector3d(0., 1., 0.));
-    points.push_back(vector3d(0., 0., 0.));
+    points.emplace_back(0., 0., 1.);
+    points.emplace_back(0., 1., 0.);
+    points.emplace_back(0., 0., 0.);
 
-    points.push_back(vector3d(1., 1., 1.));
-    points.push_back(vector3d(0., 1., 1.));
-    points.push_back(vector3d(1., 0., 1.));
+    points.emplace_back(1., 1., 1.);
+    points.emplace_back(0., 1., 1.);
+    points.emplace_back(1., 0., 1.);
 
-    points.push_back(vector3d(1., 0., 1.));
-    points.push_back(vector3d(0., 1., 1.));
-    points.push_back(vector3d(0., 0., 1.));
+    points.emplace_back(1., 0., 1.);
+    points.emplace_back(0., 1., 1.);
+    points.emplace_back(0., 0., 1.);
 
-    points.push_back(vector3d(1., 1., 0.));
-    points.push_back(vector3d(1., 1., 1.));
-    points.push_back(vector3d(1., 0., 0.));
+    points.emplace_back(1., 1., 0.);
+    points.emplace_back(1., 1., 1.);
+    points.emplace_back(1., 0., 0.);
 
-    points.push_back(vector3d(1., 0., 0.));
-    points.push_back(vector3d(1., 1., 1.));
-    points.push_back(vector3d(1., 0., 1.));
+    points.emplace_back(1., 0., 0.);
+    points.emplace_back(1., 1., 1.);
+    points.emplace_back(1., 0., 1.);
 
-    points.push_back(vector3d(0., 1., 0.));
-    points.push_back(vector3d(1., 1., 0.));
-    points.push_back(vector3d(0., 0., 0.));
+    points.emplace_back(0., 1., 0.);
+    points.emplace_back(1., 1., 0.);
+    points.emplace_back(0., 0., 0.);
 
-    points.push_back(vector3d(0., 0., 0.));
-    points.push_back(vector3d(1., 1., 0.));
-    points.push_back(vector3d(1., 0., 0.));
+    points.emplace_back(0., 0., 0.);
+    points.emplace_back(1., 1., 0.);
+    points.emplace_back(1., 0., 0.);
 
-    points.push_back(vector3d(1., 1., 1.));
-    points.push_back(vector3d(1., 1., 0.));
-    points.push_back(vector3d(0., 1., 1.));
+    points.emplace_back(1., 1., 1.);
+    points.emplace_back(1., 1., 0.);
+    points.emplace_back(0., 1., 1.);
 
-    points.push_back(vector3d(0., 1., 1.));
-    points.push_back(vector3d(1., 1., 0.));
-    points.push_back(vector3d(0., 1., 0.));
+    points.emplace_back(0., 1., 1.);
+    points.emplace_back(1., 1., 0.);
+    points.emplace_back(0., 1., 0.);
 
-    points.push_back(vector3d(1., 0., 0.));
-    points.push_back(vector3d(1., 0., 1.));
-    points.push_back(vector3d(0., 0., 0.));
+    points.emplace_back(1., 0., 0.);
+    points.emplace_back(1., 0., 1.);
+    points.emplace_back(0., 0., 0.);
 
-    points.push_back(vector3d(0., 0., 0.));
-    points.push_back(vector3d(1., 0., 1.));
-    points.push_back(vector3d(0., 0., 1.));
+    points.emplace_back(0., 0., 0.);
+    points.emplace_back(1., 0., 1.);
+    points.emplace_back(0., 0., 1.);
 
     for (size_t i = 0 ; i < points.size() ; )
         facets.push_back(facet_type{i++, i++, i++});
