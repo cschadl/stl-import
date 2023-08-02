@@ -233,7 +233,8 @@ void build_mesh_test_data_t::object::test<2>()
 
     for (auto const& expected_n : expected_normals)
     {
-        // Ensure that we have one of each facet with the expected normal
+        // Ensure that we have two of each facet with the expected normal,
+        // and that these facets each share an edge (two vertices)
         auto facets_with_expected_normal = std::partition(
             mesh_facets.begin(), mesh_facets.end(),
             [&expected_n, &mesh_verts](facet_type const& f)
@@ -251,6 +252,20 @@ void build_mesh_test_data_t::object::test<2>()
             });
 
         ensure_equals(std::distance(mesh_facets.begin(), facets_with_expected_normal), 1);
+
+        auto f1 = *(mesh_facets.begin());
+        auto f2 = *(std::next(mesh_facets.begin()));
+
+        std::sort(f1.begin(), f1.end());
+        std::sort(f2.begin(), f2.end());
+
+        std::vector<mesh2<vector3d>::IndexType> shared_indices;
+        std::set_intersection(
+            f1.begin(), f1.end(),
+            f2.begin(), f2.end(),
+            std::back_inserter(shared_indices));
+
+        ensure_equals(shared_indices.size(), 2);
     }
 }
 
