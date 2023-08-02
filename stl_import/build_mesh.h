@@ -16,7 +16,7 @@ namespace detail_
 {
     constexpr size_t invalidIdx = std::numeric_limits<size_t>::max();
 
-    // A point and its associated triangle
+    // A point and its associated index in a list of vertices
     template <typename PointType>
     struct pointAndIndex
     {
